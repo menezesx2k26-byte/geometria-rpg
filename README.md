@@ -39,7 +39,7 @@ O relatório reproduzível de aceite está em [`QA_REPORT.md`](./QA_REPORT.md).
 
 O arquivo `public/_redirects` aplica o fallback da SPA. Isso permite abrir e recarregar diretamente rotas como `/map`, `/encounter/:id` e `/codex/:id`.
 
-O release atual foi publicado por Direct Upload com Wrangler e está associado ao hash do commit no histórico do Pages. A conexão automática do provedor Git ainda não está habilitada; portanto, novos pushes precisam de novo deploy pelo Wrangler até essa integração ser configurada no dashboard.
+O release atual foi publicado por Direct Upload com Wrangler e está associado ao hash do commit no histórico do Pages. Novos pushes precisam de novo deploy pelo Wrangler. Pela limitação do Pages, a integração Git nativa exigirá um novo projeto criado no dashboard depois da autorização OAuth do GitHub.
 
 ## Arquitetura
 
