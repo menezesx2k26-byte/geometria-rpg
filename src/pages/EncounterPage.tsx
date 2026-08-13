@@ -1,87 +1,94 @@
-import { ArrowLeft, Lightbulb } from 'lucide-react';
+import { ArrowLeft, Lightbulb, Swords } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
-import { FeedbackPanel, QuestFrame, UnlockBanner } from '../components/rpg';
-import { findEncounter } from '../data/bootstrap';
+import { GeometryFigure } from '../components/encounter/GeometryFigure';
+import { FeedbackPanel, InventorySkillChip, QuestFrame, UnlockBanner } from '../components/rpg';
+import { findEncounter, skills } from '../data/bootstrap';
+import { validateApplication } from '../engine/encounterEngine';
 import { useProgress } from '../state/progress';
+import type { Encounter } from '../types/domain';
 
-export function EncounterPage() {
-  const { id = '' } = useParams();
-  const encounter = findEncounter(id);
+function EncounterSession({ encounter }: { encounter: Encounter }) {
   const { completeEncounter, recordAttempt } = useProgress();
-  const [stepIndex, setStepIndex] = useState(0);
-  const [selectedIds, setSelectedIds] = useState<string[]>([]);
-  const [feedback, setFeedback] = useState<'correct' | 'incorrect'>();
-  const [completed, setCompleted] = useState(false);
+  const [selectedSkillId, setSelectedSkillId] = useState<string>();
+  const [selectedObjectIds, setSelectedObjectIds] = useState<string[]>([]);
+  const [knownRelationIds, setKnownRelationIds] = useState<string[]>(encounter.initialRelationIds);
+  const [feedback, setFeedback] = useState<{ state: 'correct' | 'incorrect'; message: string }>();
+  const [visibleHintCount, setVisibleHintCount] = useState(0);
+  const [solved, setSolved] = useState(false);
 
-  const step = encounter?.steps[stepIndex];
-  const options = useMemo(() => {
-    if (!encounter || !step) return [];
-    if (step.objectIds) return encounter.objects.filter((item) => step.objectIds?.includes(item.id));
-    if (step.relationIds)
-      return encounter.relations.filter((item) => step.relationIds?.includes(item.id));
-    if (step.justificationIds)
-      return encounter.justifications.filter((item) => step.justificationIds?.includes(item.id));
-    return [];
-  }, [encounter, step]);
+  const inventory = useMemo(
+    () => encounter.inventorySkillIds
+      .map((id) => skills.find((skill) => skill.id === id))
+      .filter((skill) => skill !== undefined),
+    [encounter],
+  );
+  const knownRelations = encounter.relations.filter((relation) => knownRelationIds.includes(relation.id));
 
-  if (!encounter || !step) {
-    return (
-      <section className="page empty-page">
-        <h1>Encounter não encontrado</h1>
-        <Link to="/map">Voltar ao mapa</Link>
-      </section>
-    );
-  }
-
-  const toggle = (optionId: string) => {
-    if (feedback) return;
-    const expectsMultiple = step.expectedIds.length > 1;
-    setSelectedIds((current) =>
-      expectsMultiple
-        ? current.includes(optionId)
-          ? current.filter((value) => value !== optionId)
-          : [...current, optionId]
-        : [optionId],
-    );
-  };
-
-  const verify = () => {
-    const correct =
-      selectedIds.length === step.expectedIds.length &&
-      step.expectedIds.every((expected) => selectedIds.includes(expected));
-    recordAttempt(encounter.id, step.id, selectedIds, correct, [
-      step.kind === 'select-object' ? 'object-identification' : 'justification-choice',
-    ]);
-    setFeedback(correct ? 'correct' : 'incorrect');
-  };
-
-  const advance = () => {
-    if (stepIndex === encounter.steps.length - 1) {
-      const taughtSkill = encounter.teaches[0] ?? 'opv';
-      const codexEntryId = `codex-${taughtSkill}`;
-      completeEncounter(encounter.id, taughtSkill, codexEntryId);
-      setCompleted(true);
-      return;
-    }
-    setStepIndex((value) => value + 1);
-    setSelectedIds([]);
+  const toggleObject = (objectId: string) => {
     setFeedback(undefined);
+    setSelectedObjectIds((current) =>
+      current.includes(objectId)
+        ? current.filter((id) => id !== objectId)
+        : [...current, objectId],
+    );
   };
 
-  if (completed) {
+  const applySkill = () => {
+    const result = validateApplication(encounter, knownRelationIds, selectedSkillId, selectedObjectIds);
+    recordAttempt(
+      encounter.id,
+      result.ruleId ?? 'application',
+      [selectedSkillId ?? 'no-skill', ...selectedObjectIds],
+      result.correct,
+      encounter.diagnosticTags,
+    );
+    setFeedback({ state: result.correct ? 'correct' : 'incorrect', message: result.message });
+    if (!result.correct) return;
+
+    const nextRelationIds = [...new Set([...knownRelationIds, ...result.producedRelationIds])];
+    setKnownRelationIds(nextRelationIds);
+    setSelectedObjectIds([]);
+    setSelectedSkillId(undefined);
+
+    const completed = encounter.completionRelationIds.every((id) => nextRelationIds.includes(id));
+    if (completed) {
+      const unlockedSkills = skills.filter((skill) => encounter.unlockSkillIds.includes(skill.id));
+      completeEncounter(
+        encounter.id,
+        unlockedSkills.map((skill) => skill.id),
+        unlockedSkills.map((skill) => skill.codexEntryId),
+      );
+      setSolved(true);
+    }
+  };
+
+  if (solved) {
     return (
       <section className="page encounter-page">
-        <UnlockBanner title="Ângulos opostos pelo vértice">
-          A relação foi formalizada e registrada no Codex Euclidiano.
+        <UnlockBanner title={encounter.title}>
+          {encounter.unlockSkillIds.length
+            ? `Novas skills registradas: ${encounter.unlockSkillIds.map((id) => skills.find((skill) => skill.id === id)?.shortTitle).filter(Boolean).join(' · ')}.`
+            : 'A aplicação foi registrada no seu histórico local.'}
         </UnlockBanner>
+        <article className="debrief-card">
+          <span className="eyebrow">Resolução</span>
+          <h2>O argumento completo</h2>
+          <p>{encounter.resolution}</p>
+          <h3>Debrief</h3>
+          <p>{encounter.debrief}</p>
+        </article>
         <div className="completion-actions">
-          <Link className="primary-action" to="/codex/codex-opv">Abrir registro</Link>
+          {encounter.id === 'crossroads-opv' && (
+            <Link className="primary-action" to="/encounter/ordered-correspondence">Próximo encounter</Link>
+          )}
           <Link className="secondary-action" to="/map">Voltar ao mapa</Link>
         </div>
       </section>
     );
   }
+
+  const asksForCriterion = knownRelationIds.includes('relation-opv');
 
   return (
     <section className="page encounter-page">
@@ -91,67 +98,110 @@ export function EncounterPage() {
           <small>{encounter.subtitle}</small>
           <h1>{encounter.title}</h1>
         </div>
-        <span>{stepIndex + 1}/{encounter.steps.length}</span>
+        <span>{encounter.difficulty}/5</span>
       </header>
 
       <QuestFrame label={encounter.title}>
-      <div className="encounter-layout">
-        <div className="geometry-stage" aria-label="Duas retas concorrentes no ponto O">
-          <div className="line line--one" />
-          <div className="line line--two" />
-          <span className="point point--center">O</span>
-          <span className="point point--a">A</span>
-          <span className="point point--b">B</span>
-          <span className="point point--c">C</span>
-          <span className="point point--d">D</span>
+        <div className="encounter-objective">
+          <span className="eyebrow">Objetivo</span>
+          <strong>{encounter.objective}</strong>
         </div>
 
-        <div className="decision-panel">
-          <span className="eyebrow">Decisão {stepIndex + 1}</span>
-          <h2>{step.prompt}</h2>
-          {step.hint && <p className="hint"><Lightbulb size={16} /> {step.hint}</p>}
-          <div className="option-grid">
-            {options.map((option) => (
-              <button
-                key={option.id}
-                type="button"
-                className={selectedIds.includes(option.id) ? 'option is-selected' : 'option'}
-                onClick={() => toggle(option.id)}
-              >
-                <strong>{'label' in option ? option.label : option.notation}</strong>
-                {'description' in option && <span>{option.description}</span>}
-              </button>
-            ))}
-          </div>
+        <div className="gameplay-layout">
+          <GeometryFigure
+            encounter={encounter}
+            selectedObjectIds={selectedObjectIds}
+            onToggle={toggleObject}
+          />
 
-          {feedback && (
-            <FeedbackPanel state={feedback}>
-              {feedback === 'correct'
-                ? 'Relação sustentada. Você pode avançar.'
-                : 'Revise os lados dos ângulos e tente novamente.'}
-            </FeedbackPanel>
-          )}
+          <aside className="action-workbench">
+            <span className="eyebrow">Aplicação matemática</span>
+            <h2>
+              {asksForCriterion
+                ? 'As relações satisfazem um critério. Qual deles permite avançar?'
+                : 'Escolha uma skill e os objetos aos quais ela se aplica.'}
+            </h2>
 
-          <button
-            type="button"
-            className="primary-action primary-action--wide"
-            disabled={selectedIds.length === 0}
-            onClick={feedback === 'correct' ? advance : feedback === 'incorrect' ? () => {
-              setSelectedIds([]);
-              setFeedback(undefined);
-            } : verify}
-          >
-            {feedback === 'correct'
-              ? stepIndex === encounter.steps.length - 1
-                ? 'Concluir investigação'
-                : 'Próxima decisão'
-              : feedback === 'incorrect'
-                ? 'Tentar outra relação'
-                : 'Sustentar escolha'}
-          </button>
+            <div className="workbench-step">
+              <strong>1 · Skill</strong>
+              <div className="skill-inventory">
+                {inventory.map((skill) => (
+                  <button
+                    type="button"
+                    key={skill.id}
+                    className={selectedSkillId === skill.id ? 'is-selected' : ''}
+                    onClick={() => {
+                      if (selectedSkillId !== skill.id) setSelectedObjectIds([]);
+                      setSelectedSkillId(skill.id);
+                      setFeedback(undefined);
+                    }}
+                  >
+                    <InventorySkillChip skill={skill} state="available" />
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <div className="workbench-step">
+              <strong>2 · Objetos</strong>
+              <p>
+                {selectedObjectIds.length
+                  ? selectedObjectIds.map((id, index) => `${index + 1}. ${encounter.objects.find((object) => object.id === id)?.label}`).join(' · ')
+                  : 'Toque nos objetos da figura ou use os alvos textuais abaixo dela.'}
+              </p>
+            </div>
+
+            {feedback && <FeedbackPanel state={feedback.state}>{feedback.message}</FeedbackPanel>}
+
+            <button
+              type="button"
+              className="primary-action primary-action--wide"
+              disabled={!selectedSkillId || selectedObjectIds.length === 0}
+              onClick={applySkill}
+            >
+              <Swords size={18} /> Confirmar aplicação
+            </button>
+
+            <section className="relation-workspace">
+              <strong>Workspace de relações</strong>
+              {knownRelations.length ? (
+                <ol>
+                  {knownRelations.map((relation) => (
+                    <li key={relation.id}><span>{relation.notation}</span><small>{relation.reason}</small></li>
+                  ))}
+                </ol>
+              ) : <p>Nenhuma relação registrada ainda.</p>}
+            </section>
+
+            <section className="layered-hints">
+              {encounter.hints.slice(0, visibleHintCount).map((hint, index) => (
+                <p key={hint}><Lightbulb size={15} /><span><strong>Pista {index + 1}:</strong> {hint}</span></p>
+              ))}
+              {visibleHintCount < encounter.hints.length && (
+                <button type="button" className="text-action" onClick={() => setVisibleHintCount((count) => count + 1)}>
+                  Mostrar {visibleHintCount ? 'próxima pista' : 'uma pista'}
+                </button>
+              )}
+            </section>
+          </aside>
         </div>
-      </div>
       </QuestFrame>
     </section>
   );
+}
+
+export function EncounterPage() {
+  const { id = '' } = useParams();
+  const encounter = findEncounter(id);
+
+  if (!encounter) {
+    return (
+      <section className="page empty-page">
+        <h1>Encounter não encontrado</h1>
+        <Link to="/map">Voltar ao mapa</Link>
+      </section>
+    );
+  }
+
+  return <EncounterSession key={encounter.id} encounter={encounter} />;
 }

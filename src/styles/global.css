@@ -162,6 +162,40 @@ p { color: var(--muted); line-height: 1.65; }
 .encounter-header small, .encounter-header > span { color: var(--muted); }
 .icon-link { display: grid; width: 42px; height: 42px; place-items: center; border: 1px solid var(--line); border-radius: 9px; background: var(--surface); }
 .encounter-layout { display: grid; gap: 18px; }
+.encounter-objective { display: grid; gap: 4px; margin: 0 0 18px; border-left: 4px solid var(--success); padding: 5px 0 5px 13px; }
+.encounter-objective strong { font-family: Georgia, serif; font-size: 1.12rem; }
+.gameplay-layout { display: grid; gap: 18px; }
+.interactive-figure { overflow: hidden; border: 1px solid rgba(91, 58, 23, .45); border-radius: 18px 6px 18px 6px; color: var(--ink); background: radial-gradient(circle at center, rgba(62, 142, 208, .12), transparent 35%), linear-gradient(rgba(70, 72, 60, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(70, 72, 60, .08) 1px, transparent 1px), #e7d5ae; background-size: auto, 24px 24px, 24px 24px, auto; }
+.interactive-figure svg { display: block; width: 100%; min-height: 320px; }
+.interactive-figure svg polygon { cursor: pointer; fill: rgba(62, 142, 208, .035); stroke: #173e50; stroke-width: 4; transition: fill .15s ease; }
+.interactive-figure svg polygon.is-selected { fill: rgba(62, 142, 208, .22); stroke: #207da4; }
+.interactive-figure svg line { stroke: #173e50; stroke-width: 4; }
+.interactive-figure svg .triangle-side { stroke-width: 3; }
+.interactive-figure svg text { fill: #133646; font-family: Georgia, serif; font-size: 24px; font-weight: 900; }
+.interactive-figure svg .angle-mark { fill: none; stroke: #c64e4e; stroke-width: 7; }
+.interactive-figure svg .tick-mark { fill: none; stroke: #c64e4e; stroke-width: 5; }
+.figure-object-palette { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; border-top: 1px solid rgba(91, 58, 23, .25); padding: 12px; background: rgba(255, 255, 255, .3); }
+.figure-object-button { position: relative; min-height: 46px; border: 1px solid rgba(49, 79, 83, .3); border-radius: 8px; color: var(--ink); background: rgba(255, 255, 255, .48); font-weight: 850; cursor: pointer; }
+.figure-object-button span { position: absolute; top: -5px; right: -3px; display: grid; width: 21px; height: 21px; place-items: center; border-radius: 50%; color: white; background: #267a9c; font-size: .65rem; }
+.action-workbench { border: 1px solid rgba(91, 58, 23, .44); border-radius: 7px 18px 7px 18px; padding: 20px; color: var(--ink); background: linear-gradient(120deg, rgba(255, 255, 255, .18), transparent 45%), var(--parchment); }
+.action-workbench > .eyebrow { color: #286278; }
+.action-workbench h2 { margin: 8px 0 18px; font-size: 1.3rem; line-height: 1.25; }
+.workbench-step { margin-bottom: 17px; }
+.workbench-step > strong, .relation-workspace > strong { display: block; margin-bottom: 8px; color: #31535c; font-size: .68rem; letter-spacing: .1em; text-transform: uppercase; }
+.workbench-step p { margin: 0; color: #526064; font-size: .8rem; }
+.skill-inventory { display: flex; flex-wrap: wrap; gap: 7px; }
+.skill-inventory > button { min-height: 46px; border: 1px solid transparent; border-radius: 999px; padding: 0; color: var(--text); background: #1d5266; cursor: pointer; }
+.skill-inventory > button.is-selected { border-color: #174f67; box-shadow: 0 0 0 3px rgba(62, 142, 208, .25); }
+.relation-workspace { margin-top: 20px; border-top: 1px solid rgba(42, 77, 84, .2); padding-top: 17px; }
+.relation-workspace ol { display: grid; gap: 8px; margin: 0; padding-left: 25px; }
+.relation-workspace li { padding-left: 3px; }
+.relation-workspace li span, .relation-workspace li small { display: block; }
+.relation-workspace li span { font-family: Georgia, serif; font-weight: 800; }
+.relation-workspace li small { color: #5c6968; }
+.relation-workspace p { margin: 0; color: #5c6968; font-size: .8rem; }
+.layered-hints { margin-top: 18px; }
+.layered-hints p { display: flex; gap: 8px; margin: 7px 0; color: #526064; font-size: .78rem; line-height: 1.45; }
+.layered-hints .text-action { margin: 5px 0 0; color: #226c8a; font-size: .78rem; font-weight: 850; }
 .geometry-stage { position: relative; min-height: 330px; overflow: hidden; border: 1px solid rgba(91, 58, 23, .45); border-radius: 18px 6px 18px 6px; background: radial-gradient(circle at center, rgba(62, 142, 208, .12), transparent 35%), linear-gradient(rgba(70, 72, 60, .08) 1px, transparent 1px), linear-gradient(90deg, rgba(70, 72, 60, .08) 1px, transparent 1px), #e7d5ae; background-size: auto, 24px 24px, 24px 24px, auto; }
 .line { position: absolute; top: 50%; left: 10%; width: 80%; height: 3px; transform-origin: center; background: #183b4d; box-shadow: 0 0 0 1px rgba(255, 255, 255, .2); }
 .line--one { transform: rotate(34deg); }
@@ -188,6 +222,11 @@ p { color: var(--muted); line-height: 1.65; }
 .unlock-banner strong { margin-top: 4px; font-family: Georgia, serif; font-size: clamp(1.45rem, 6vw, 2.7rem); }
 .unlock-banner p { margin: 9px 0 0; color: #3d5d53; }
 .completion-actions { display: flex; flex-wrap: wrap; justify-content: center; gap: 10px; margin-top: 22px; }
+.debrief-card { max-width: 760px; margin: 22px auto 0; border: 1px solid rgba(105, 68, 26, .45); border-radius: 8px 22px 8px 22px; padding: clamp(20px, 5vw, 36px); color: var(--ink); background: var(--parchment); }
+.debrief-card .eyebrow { color: #286278; }
+.debrief-card h2 { margin: 6px 0 12px; }
+.debrief-card h3 { margin: 23px 0 5px; }
+.debrief-card p { color: #526064; }
 .boss-frame { display: grid; gap: 18px; border: 1px solid rgba(130, 87, 167, .55); border-radius: 24px; padding: 20px; background: linear-gradient(140deg, rgba(77, 42, 103, .65), rgba(11, 32, 46, .92)); }
 .boss-frame > img { width: 180px; max-width: 100%; margin: 0 auto; filter: drop-shadow(0 12px 14px rgba(0, 0, 0, .35)); }
 
@@ -225,6 +264,9 @@ p { color: var(--muted); line-height: 1.65; }
   .quest-frame { padding: 62px 28px 28px; }
   .encounter-card { grid-template-columns: 1fr auto; }
   .encounter-layout { grid-template-columns: minmax(0, 1.2fr) minmax(340px, .8fr); align-items: start; }
+  .gameplay-layout { grid-template-columns: minmax(0, 1.18fr) minmax(340px, .82fr); align-items: start; }
+  .action-workbench { position: sticky; top: 88px; }
+  .figure-object-palette { grid-template-columns: repeat(4, 1fr); }
   .geometry-stage { min-height: 560px; }
   .decision-panel { position: sticky; top: 88px; }
   .codex-grid { grid-template-columns: repeat(2, 1fr); }

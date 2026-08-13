@@ -75,9 +75,10 @@ export interface GeometryObject {
 
 export interface GeometryRelation {
   id: string;
-  kind: 'congruent' | 'equal' | 'supplementary' | 'opposite-vertical' | 'shared';
+  kind: 'congruent' | 'equal' | 'supplementary' | 'opposite-vertical' | 'shared' | 'correspondence';
   objectIds: string[];
   notation: string;
+  reason?: string;
 }
 
 export interface Justification {
@@ -104,6 +105,24 @@ export interface CompletionRules {
   allowHints: boolean;
 }
 
+export type FigureKind = 'crossed-triangles' | 'ordered-triangles';
+
+export interface SemanticErrorRule {
+  when: 'wrong-skill' | 'wrong-objects' | 'wrong-order' | 'missing-relation';
+  message: string;
+}
+
+export interface EncounterApplicationRule {
+  id: string;
+  skillId: string;
+  objectIds: string[];
+  orderMatters?: boolean;
+  requiresRelationIds: string[];
+  producesRelationIds: string[];
+  successMessage: string;
+  semanticErrors: SemanticErrorRule[];
+}
+
 export interface Encounter {
   id: string;
   regionId: string;
@@ -121,7 +140,17 @@ export interface Encounter {
   completionRules: CompletionRules;
   recoveryEncounters: string[];
   briefing: string;
+  objective: string;
   assetKey: string;
+  figureKind: FigureKind;
+  inventorySkillIds: string[];
+  initialRelationIds: string[];
+  applicationRules: EncounterApplicationRule[];
+  hints: string[];
+  completionRelationIds: string[];
+  resolution: string;
+  debrief: string;
+  unlockSkillIds: string[];
   objects: GeometryObject[];
   relations: GeometryRelation[];
   justifications: Justification[];

@@ -58,7 +58,7 @@ interface ProgressContextValue {
     correct: boolean,
     diagnosticTags?: DiagnosticTag[],
   ) => void;
-  completeEncounter: (encounterId: string, skillId: string, codexEntryId: string) => void;
+  completeEncounter: (encounterId: string, skillIds: string[], codexEntryIds: string[]) => void;
   resetProgress: () => void;
 }
 
@@ -86,21 +86,22 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         };
         commit({ ...progress, attempts: [...progress.attempts, attempt] });
       },
-      completeEncounter(encounterId, skillId, codexEntryId) {
-        const profile = progress.skills[skillId];
-        if (!profile) return;
-        const nextSkills = {
-          ...progress.skills,
-          [skillId]: {
+      completeEncounter(encounterId, skillIds, codexEntryIds) {
+        const nextSkills = { ...progress.skills };
+        for (const skillId of skillIds) {
+          const profile = nextSkills[skillId];
+          if (!profile) continue;
+          nextSkills[skillId] = {
             ...profile,
             state: 'mastered' as const,
             mastery: 1,
+            dimensions: profile.dimensions.map((dimension) => ({ ...dimension, score: 1 })),
             lastPracticedAt: new Date().toISOString(),
-          },
-        };
+          };
+        }
         const newlyAvailable = skills.filter(
           (skill) =>
-            skill.prerequisites.includes(skillId) &&
+            skill.prerequisites.some((id) => skillIds.includes(id)) &&
             skill.prerequisites.every((id) => nextSkills[id]?.state === 'mastered'),
         );
         for (const nextSkill of newlyAvailable) {
@@ -114,12 +115,12 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
           discoveredSkillIds: [
             ...new Set([
               ...progress.discoveredSkillIds,
-              skillId,
+              ...skillIds,
               ...newlyAvailable.map((skill) => skill.id),
             ]),
           ],
           discoveredCodexEntryIds: [
-            ...new Set([...progress.discoveredCodexEntryIds, codexEntryId]),
+            ...new Set([...progress.discoveredCodexEntryIds, ...codexEntryIds]),
           ],
         });
       },

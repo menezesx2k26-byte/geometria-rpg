@@ -76,6 +76,24 @@ export function validateContent(bundle: ContentBundle) {
     for (const id of encounter.recoveryEncounters) {
       if (!encounterIds.has(id)) errors.push(`${encounter.id}: recovery encounter inexistente ${id}`);
     }
+    for (const id of [...encounter.inventorySkillIds, ...encounter.unlockSkillIds]) {
+      if (!skillIds.has(id)) errors.push(`${encounter.id}: skill de gameplay inexistente ${id}`);
+    }
+    const relationIds = new Set(encounter.relations.map((relation) => relation.id));
+    const objectIds = new Set(encounter.objects.map((object) => object.id));
+    for (const id of [...encounter.initialRelationIds, ...encounter.completionRelationIds]) {
+      if (!relationIds.has(id)) errors.push(`${encounter.id}: relação de gameplay inexistente ${id}`);
+    }
+    for (const rule of encounter.applicationRules) {
+      if (!skillIds.has(rule.skillId)) errors.push(`${encounter.id}/${rule.id}: skill inexistente ${rule.skillId}`);
+      for (const id of rule.objectIds) if (!objectIds.has(id)) errors.push(`${encounter.id}/${rule.id}: objeto inexistente ${id}`);
+      for (const id of [...rule.requiresRelationIds, ...rule.producesRelationIds]) {
+        if (!relationIds.has(id)) errors.push(`${encounter.id}/${rule.id}: relação inexistente ${id}`);
+      }
+      for (const kind of ['wrong-skill', 'wrong-objects', 'wrong-order', 'missing-relation'] as const) {
+        if (!rule.semanticErrors.some((error) => error.when === kind)) errors.push(`${encounter.id}/${rule.id}: feedback semântico ausente para ${kind}`);
+      }
+    }
     const stepIds = encounter.steps.map((step) => step.id);
     if (findDuplicates(stepIds).length) errors.push(`${encounter.id}: IDs de steps duplicados`);
     for (const id of encounter.completionRules.requiredStepIds) {
