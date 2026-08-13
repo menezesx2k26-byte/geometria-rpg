@@ -156,19 +156,76 @@ export interface Encounter {
   justifications: Justification[];
 }
 
+export type ProofJustification =
+  | 'hypothesis'
+  | 'definition'
+  | 'reflexivity'
+  | 'OPV'
+  | 'midpoint'
+  | 'angleBisector'
+  | 'collinearity'
+  | 'supplementary'
+  | 'complementary'
+  | 'LAL'
+  | 'ALA'
+  | 'LLL'
+  | 'correspondingParts'
+  | 'isoscelesTheorem'
+  | 'transitivity'
+  | 'contradiction'
+  | 'algebra';
+
+export type ProofInteraction =
+  | 'build-step'
+  | 'order-cards'
+  | 'complete-justification'
+  | 'choose-construction'
+  | 'select-consequence'
+  | 'assemble-equation'
+  | 'find-invalid-step';
+
+export interface ProofChoice {
+  id: string;
+  label: string;
+}
+
+export interface ProofStepAlternative {
+  involvedObjects?: string[];
+  relation?: string;
+  justification?: ProofJustification;
+  answerIds?: string[];
+}
+
 export interface ProofStep {
   id: string;
   statement: string;
-  justificationId: string;
-  dependsOn: string[];
+  involvedObjects: string[];
+  relation: string;
+  justification: ProofJustification;
+  dependencies: string[];
+  optionalConstruction?: string;
+  acceptedAlternatives: ProofStepAlternative[];
+  interaction: ProofInteraction;
+  prompt: string;
+  hint: string;
+  objectOptions: ProofChoice[];
+  relationOptions: ProofChoice[];
+  justificationOptions: ProofJustification[];
+  answerOptions: ProofChoice[];
+  expectedAnswerIds: string[];
 }
 
 export interface Proof {
   id: string;
   title: string;
+  subtitle: string;
+  source: SourceReference;
   hypothesis: string[];
   thesis: string;
+  objects: GeometryObject[];
   steps: ProofStep[];
+  debrief: string;
+  unlockSkillIds: string[];
 }
 
 export interface Exercise {

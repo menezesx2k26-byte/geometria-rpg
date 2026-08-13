@@ -230,6 +230,44 @@ p { color: var(--muted); line-height: 1.65; }
 .boss-frame { display: grid; gap: 18px; border: 1px solid rgba(130, 87, 167, .55); border-radius: 24px; padding: 20px; background: linear-gradient(140deg, rgba(77, 42, 103, .65), rgba(11, 32, 46, .92)); }
 .boss-frame > img { width: 180px; max-width: 100%; margin: 0 auto; filter: drop-shadow(0 12px 14px rgba(0, 0, 0, .35)); }
 
+.training-grid { display: grid; gap: 15px; margin-top: 30px; }
+.training-card { border: 1px solid rgba(121, 220, 255, .27); border-radius: 10px 24px 10px 24px; padding: 22px; background: linear-gradient(145deg, rgba(26, 77, 94, .82), rgba(10, 43, 57, .92)); box-shadow: 0 16px 36px rgba(0, 0, 0, .18); }
+.training-card > small { color: var(--accent); font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.training-card h2 { margin: 7px 0; font-size: 1.55rem; }
+.training-card p { min-height: 72px; }
+.training-card > div { display: flex; flex-wrap: wrap; gap: 9px; }
+.proof-header { display: grid; grid-template-columns: 44px 1fr; gap: 12px; align-items: center; }
+.proof-header h1 { margin: 3px 0 0; font-size: clamp(1.7rem, 7vw, 3.3rem); }
+.proof-header nav { display: flex; grid-column: 1 / -1; gap: 6px; border: 1px solid var(--line); border-radius: 10px; padding: 5px; }
+.proof-header nav a { display: inline-flex; flex: 1; align-items: center; justify-content: center; gap: 6px; min-height: 42px; border-radius: 7px; color: var(--muted); font-size: .75rem; font-weight: 800; }
+.proof-header nav a.is-active { color: white; background: rgba(62, 142, 208, .28); }
+.proof-brief { display: grid; gap: 12px; margin: 22px 0 28px; border: 1px solid rgba(105, 68, 26, .42); border-radius: 8px 20px 8px 20px; padding: 17px; color: var(--ink); background: var(--parchment); }
+.proof-brief > div { display: grid; gap: 4px; }
+.proof-brief small { color: #2c6578; font-size: .66rem; font-weight: 900; letter-spacing: .12em; text-transform: uppercase; }
+.proof-brief span { color: #4c5f62; font-size: .8rem; }
+.proof-layout { display: grid; gap: 16px; }
+.proof-map { display: grid; gap: 6px; }
+.proof-progress { position: relative; height: 34px; overflow: hidden; border: 1px solid rgba(121, 220, 255, .25); border-radius: 999px; background: rgba(3, 25, 35, .42); }
+.proof-progress > span { display: block; height: 100%; background: linear-gradient(90deg, #2e8a62, #65c58d); }
+.proof-progress > strong { position: absolute; inset: 0; display: grid; place-items: center; font-size: .68rem; }
+.proof-map > button { display: grid; grid-template-columns: 30px 1fr; gap: 8px; align-items: center; min-height: 46px; border: 1px solid rgba(121, 220, 255, .13); border-radius: 8px; padding: 6px 9px; color: var(--muted); text-align: left; background: rgba(3, 25, 35, .38); cursor: pointer; }
+.proof-map > button > span { display: grid; width: 26px; height: 26px; place-items: center; border-radius: 50%; background: rgba(255, 255, 255, .08); font-size: .7rem; }
+.proof-map > button small { line-height: 1.25; }
+.proof-map > button.is-active { border-color: rgba(121, 220, 255, .58); color: white; background: rgba(62, 142, 208, .18); }
+.proof-map > button.is-complete { color: var(--success); }
+.proof-workbench { border: 1px solid rgba(91, 58, 23, .44); border-radius: 8px 22px 8px 22px; padding: 19px; color: var(--ink); background: linear-gradient(120deg, rgba(255, 255, 255, .18), transparent 45%), var(--parchment); }
+.proof-workbench > .eyebrow { color: #286278; }
+.proof-workbench h2 { margin: 7px 0 12px; font-size: 1.35rem; }
+.proof-hint, .exam-note { border-left: 3px solid var(--blue); padding-left: 10px; color: #536366; font-size: .8rem; }
+.exam-note { display: flex; align-items: center; gap: 7px; border-left-color: var(--red); }
+.proof-choice-grid { display: grid; gap: 8px; margin: 18px 0; }
+.proof-choice { position: relative; min-height: 48px; border: 1px solid rgba(49, 79, 83, .25); border-radius: 8px; padding: 10px 12px; color: var(--ink); text-align: left; background: rgba(255, 255, 255, .42); cursor: pointer; }
+.proof-choice.is-selected { border-color: #267a9c; background: rgba(62, 142, 208, .14); box-shadow: inset 4px 0 #267a9c; }
+.proof-choice > span { display: inline-grid; width: 22px; height: 22px; place-items: center; margin-right: 7px; border-radius: 50%; color: white; background: #267a9c; font-size: .65rem; }
+.proof-builder-grid { display: grid; gap: 12px; margin: 18px 0; }
+.proof-builder-grid fieldset { display: grid; gap: 7px; min-width: 0; border: 1px solid rgba(49, 79, 83, .2); border-radius: 9px; padding: 10px; }
+.proof-builder-grid legend { padding: 0 5px; color: #31535c; font-size: .66rem; font-weight: 900; letter-spacing: .1em; text-transform: uppercase; }
+
 .codex-grid { display: grid; gap: 13px; margin-top: 28px; }
 .codex-card { display: block; min-height: 210px; border: 1px solid rgba(105, 68, 26, .44); border-radius: 8px 22px 8px 22px; padding: 21px; color: var(--ink); background: repeating-linear-gradient(9deg, rgba(105, 68, 26, .025) 0 1px, transparent 1px 6px), var(--parchment); box-shadow: 0 13px 30px rgba(0, 0, 0, .16); }
 .codex-card > svg { color: #2c7794; }
@@ -270,7 +308,15 @@ p { color: var(--muted); line-height: 1.65; }
   .geometry-stage { min-height: 560px; }
   .decision-panel { position: sticky; top: 88px; }
   .codex-grid { grid-template-columns: repeat(2, 1fr); }
+  .training-grid { grid-template-columns: repeat(2, 1fr); }
+  .proof-header { grid-template-columns: 44px 1fr auto; }
+  .proof-header nav { grid-column: auto; min-width: 220px; }
+  .proof-brief { grid-template-columns: 1fr 1fr; }
   .bottom-nav { right: auto; top: 50%; bottom: auto; left: 18px; width: 72px; grid-template-columns: 1fr; transform: translateY(-50%); border: 1px solid rgba(121, 220, 255, .25); border-radius: 18px; padding: 8px; }
   .main-content { padding-left: 82px; }
   .boss-frame { grid-template-columns: 190px 1fr; align-items: center; }
+  .proof-page .boss-frame { grid-template-columns: 1fr; align-items: stretch; }
+  .proof-page .boss-frame > img { width: 150px; }
+  .proof-layout { grid-template-columns: minmax(230px, .62fr) minmax(0, 1.38fr); align-items: start; }
+  .proof-builder-grid { grid-template-columns: repeat(3, 1fr); }
 }

@@ -5,6 +5,7 @@ import { EncounterPage } from './pages/EncounterPage';
 import { MapPage } from './pages/MapPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { TrainingPage } from './pages/TrainingPage';
+import { ProofPage } from './pages/ProofPage';
 
 export function App() {
   return (
@@ -16,6 +17,7 @@ export function App() {
         <Route path="codex" element={<CodexPage />} />
         <Route path="codex/:id" element={<CodexPage />} />
         <Route path="training" element={<TrainingPage />} />
+        <Route path="proof/:id" element={<ProofPage />} />
         <Route path="review" element={<ReviewPage />} />
         <Route path="*" element={<Navigate to="/map" replace />} />
       </Route>
