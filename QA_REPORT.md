@@ -44,6 +44,9 @@ A exposição não domina a feature. Ela contextualiza decisões e fornece debri
 | Build command | PASSOU — `npm run build` |
 | Output directory | PASSOU — `dist` |
 | Fallback SPA | PASSOU — `public/_redirects` versionado |
-| Produção Cloudflare Pages | PENDENTE DE DEPLOY |
-| Preview Cloudflare Pages | PENDENTE DE DEPLOY |
-
+| Produção Cloudflare Pages | PASSOU — https://geometria-rpg.pages.dev |
+| Refresh de rota profunda | PASSOU — `/vertical-slice` e `/proof/isosceles-base-angles?mode=training` retornam a SPA e renderizam no navegador |
+| Assets RPG em produção | PASSOU — três assets auditados retornam `200 image/png` |
+| Preview Cloudflare Pages | PASSOU — https://qa-preview.geometria-rpg.pages.dev |
+| Commit do Pages | PASSOU — o deployment registra o mesmo hash publicado em `main` |
+| Integração automática GitHub → Pages | FALHOU — o projeto foi publicado por Direct Upload e ainda aparece como `Git Provider: No` |

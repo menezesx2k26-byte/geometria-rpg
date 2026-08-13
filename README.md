@@ -28,16 +28,18 @@ npm run qa         # lint + unitários + build + E2E
 
 O relatório reproduzível de aceite está em [`QA_REPORT.md`](./QA_REPORT.md).
 
-## Deploy
-
-Pipeline oficial: GitHub → Cloudflare Pages.
+## Deploy público
 
 - Repositório: https://github.com/menezesx2k26-byte/geometria-rpg
+- Produção: https://geometria-rpg.pages.dev
+- Preview QA: https://qa-preview.geometria-rpg.pages.dev
 - Production branch: `main`
 - Build command: `npm run build`
 - Build output directory: `dist`
 
 O arquivo `public/_redirects` aplica o fallback da SPA. Isso permite abrir e recarregar diretamente rotas como `/map`, `/encounter/:id` e `/codex/:id`.
+
+O release atual foi publicado por Direct Upload com Wrangler e está associado ao hash do commit no histórico do Pages. A conexão automática do provedor Git ainda não está habilitada; portanto, novos pushes precisam de novo deploy pelo Wrangler até essa integração ser configurada no dashboard.
 
 ## Arquitetura
 
