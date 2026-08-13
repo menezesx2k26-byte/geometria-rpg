@@ -18,6 +18,16 @@ npm run preview
 
 O projeto é uma SPA React + TypeScript + Vite. O bundle estático é gerado em `dist/` e não depende de servidor Node ou backend.
 
+## Qualidade
+
+```bash
+npm run test       # Vitest: regras puras e integridade do conteúdo
+npm run test:e2e   # Playwright: aplicação real em Chromium
+npm run qa         # lint + unitários + build + E2E
+```
+
+O relatório reproduzível de aceite está em [`QA_REPORT.md`](./QA_REPORT.md).
+
 ## Deploy
 
 Pipeline oficial: GitHub → Cloudflare Pages.
@@ -27,7 +37,7 @@ Pipeline oficial: GitHub → Cloudflare Pages.
 - Build command: `npm run build`
 - Build output directory: `dist`
 
-O Cloudflare Pages aplica fallback de SPA quando não existe um `404.html` de nível superior. Isso permite abrir e recarregar diretamente rotas como `/map`, `/encounter/:id` e `/codex/:id`.
+O arquivo `public/_redirects` aplica o fallback da SPA. Isso permite abrir e recarregar diretamente rotas como `/map`, `/encounter/:id` e `/codex/:id`.
 
 ## Arquitetura
 
@@ -35,5 +45,5 @@ O Cloudflare Pages aplica fallback de SPA quando não existe um `404.html` de n�
 - `src/engine`: regras puras dos encounters e provas;
 - `src/state`: progresso persistido localmente;
 - `src/components`: interfaces reutilizáveis de geometria, gameplay, prova e navegação;
-- `src/pages`: mapa, encounters, Codex, treino e revisão;
+- `src/pages`: mapa, campanhas, encounters, Proof Engine, laboratório, Codex, treino e revisão;
 - `src/types`: modelo do domínio matemático e pedagógico.

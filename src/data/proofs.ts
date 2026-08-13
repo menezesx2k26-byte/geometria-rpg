@@ -114,6 +114,7 @@ export const proofs: Proof[] = [
         id: 'linear-pair', statement: 'm(∠ADB) + m(∠ADC) = 180°', involvedObjects: ['angle-adb', 'angle-adc'], relation: 'supplementary', justification: 'supplementary', dependencies: ['angles-at-d', 'collinear-bdc'], interaction: 'order-cards',
         prompt: 'Ordene as peças lógicas que sustentam a soma de 180°.', hint: 'Primeiro a igualdade angular, depois a colinearidade, então a soma.',
         answerOptions: [{ id: 'angles-at-d', label: '∠ADB ≅ ∠ADC' }, { id: 'collinear-bdc', label: 'B, D, C colineares' }, { id: 'linear-pair', label: 'A soma é 180°' }], expectedAnswerIds: ['angles-at-d', 'collinear-bdc', 'linear-pair'],
+        acceptedAlternatives: [{ answerIds: ['collinear-bdc', 'angles-at-d', 'linear-pair'] }],
       }),
       step({
         id: 'right-angles', statement: 'm(∠ADB) = m(∠ADC) = 90°', involvedObjects: ['angle-adb', 'angle-adc'], relation: 'equal-90', justification: 'algebra', dependencies: ['angles-at-d', 'linear-pair'], interaction: 'assemble-equation',

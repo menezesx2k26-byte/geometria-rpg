@@ -14,5 +14,23 @@ const path = [
 
 export function VerticalSlicePage() {
   const { progress } = useProgress();
-  return <section className="page vertical-slice-page"><div className="slice-hero"><Castle /><span className="eyebrow">Prova de conceito · 10–15 minutos</span><h1>Fortaleza da Congruência</h1><p>Uma sequência jogável de correspondência, OPV, critérios, prova e descoberta. A teoria aparece no Codex depois da ação.</p></div><div className="slice-skill-path">{path.map((item, index) => { const profile = progress.skills[item.id]; const discovered = progress.discoveredSkillIds.includes(item.id); const title = item.hiddenTitle && !discovered ? item.hiddenTitle : item.title; const available = index < 4 || discovered; return <Link key={item.id} to={available ? item.route : '#'} aria-disabled={!available} className={available ? 'slice-skill' : 'slice-skill is-locked'}><span>{profile?.state === 'mastered' ? <Check /> : available ? <Swords /> : <LockKeyhole />}</span><div><small>Etapa {index + 1}</small><strong>{title}</strong>{profile && <em>{Math.round(profile.mastery)}/100</em>}</div></Link>; })}</div><BossFrame><div className="slice-missions"><article><span className="eyebrow">Quest principal</span><h2>OPV → LAL → consequência</h2><p>Prove △AFB≅△HFR e extraia AB≅HR.</p><Link className="primary-action" to="/encounter/crossroads-opv">Entrar <ArrowRight size={16}/></Link></article><article><span className="eyebrow">Quest oficial 15</span><h2>ALA → x → y → perímetros</h2><p>Resposta oficial: x=14, y=10 e razão=1.</p><Link className="primary-action" to="/encounter/official-q15">Resolver <ArrowRight size={16}/></Link></article><article><span className="eyebrow">Boss Proof</span><h2>Bissetriz ⇒ mediana e altura</h2><p>Construa as duas cadeias no Proof Engine.</p><Link className="primary-action" to="/proof/isosceles-cevian?mode=training">Provar <ArrowRight size={16}/></Link></article></div></BossFrame><Link className="slice-codex-link" to="/codex"><BookOpen/><span><strong>Codex mínimo</strong><small>Entradas desbloqueadas por descoberta e prova.</small></span></Link></section>;
+  return (
+    <section className="page vertical-slice-page">
+      <div className="slice-hero"><Castle /><span className="eyebrow">Prova de conceito · 10–15 minutos</span><h1>Fortaleza da Congruência</h1><p>Uma sequência jogável de correspondência, OPV, critérios, prova e descoberta. A teoria aparece no Codex depois da ação.</p></div>
+      <div className="slice-skill-path">
+        {path.map((item, index) => {
+          const profile = progress.skills[item.id];
+          const discovered = progress.discoveredSkillIds.includes(item.id);
+          const title = item.hiddenTitle && !discovered ? item.hiddenTitle : item.title;
+          const available = index < 4 || discovered;
+          const content = <><span>{profile?.state === 'mastered' ? <Check /> : available ? <Swords /> : <LockKeyhole />}</span><div><small>Etapa {index + 1}</small><strong>{title}</strong>{profile && <em>{Math.round(profile.mastery)}/100</em>}</div></>;
+          return available
+            ? <Link key={item.id} to={item.route} className="slice-skill">{content}</Link>
+            : <article key={item.id} className="slice-skill is-locked" aria-label={`${title} bloqueada`}>{content}</article>;
+        })}
+      </div>
+      <BossFrame><div className="slice-missions"><article><span className="eyebrow">Quest principal</span><h2>OPV → LAL → consequência</h2><p>Prove △AFB≅△HFR e extraia AB≅HR.</p><Link className="primary-action" to="/encounter/crossroads-opv">Entrar <ArrowRight size={16}/></Link></article><article><span className="eyebrow">Quest oficial 15</span><h2>ALA → x → y → perímetros</h2><p>Resposta oficial: x=14, y=10 e razão=1.</p><Link className="primary-action" to="/encounter/official-q15">Resolver <ArrowRight size={16}/></Link></article><article><span className="eyebrow">Boss Proof</span><h2>Bissetriz ⇒ mediana e altura</h2><p>Construa as duas cadeias no Proof Engine.</p><Link className="primary-action" to="/proof/isosceles-cevian?mode=training">Provar <ArrowRight size={16}/></Link></article></div></BossFrame>
+      <Link className="slice-codex-link" to="/codex"><BookOpen/><span><strong>Codex mínimo</strong><small>Entradas desbloqueadas por descoberta e prova.</small></span></Link>
+    </section>
+  );
 }

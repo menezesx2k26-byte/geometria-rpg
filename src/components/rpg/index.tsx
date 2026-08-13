@@ -55,7 +55,14 @@ export function MasteryBar({ profile, compact = false }: { profile: MasteryProfi
   return (
     <div className={compact ? 'mastery-bar mastery-bar--compact' : 'mastery-bar'}>
       <span className="mastery-bar__label">Domínio <strong>{percent}%</strong></span>
-      <span className="mastery-bar__track" aria-label={`${percent}% de domínio`}>
+      <span
+        className="mastery-bar__track"
+        role="progressbar"
+        aria-label="Domínio"
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-valuenow={percent}
+      >
         <span style={{ width: `${percent}%` }} />
       </span>
     </div>

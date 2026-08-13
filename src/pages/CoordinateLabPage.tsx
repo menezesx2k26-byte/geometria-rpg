@@ -52,9 +52,13 @@ export function CoordinateLabPage() {
       <div className="coordinate-lab-layout">
         <div className="cartesian-board">
           <div className="cartesian-grid" role="grid" aria-label="Plano cartesiano de -4 a 4">
-            {gridValues.slice().reverse().flatMap((y) => gridValues.map((x) => (
-              <button type="button" role="gridcell" aria-label={`Ponto (${x}, ${y})`} key={`${x},${y}`} className={`${x === 0 ? 'on-y-axis ' : ''}${y === 0 ? 'on-x-axis ' : ''}${selected?.[0] === x && selected[1] === y ? 'is-selected' : ''}`} onClick={() => { setSelected([x,y]); setFeedback(undefined); }}><span /></button>
-            )))}
+            {gridValues.slice().reverse().map((y) => (
+              <div className="cartesian-row" role="row" key={y}>
+                {gridValues.map((x) => (
+                  <button type="button" role="gridcell" aria-label={`Ponto (${x}, ${y})`} key={`${x},${y}`} className={`${x === 0 ? 'on-y-axis ' : ''}${y === 0 ? 'on-x-axis ' : ''}${selected?.[0] === x && selected[1] === y ? 'is-selected' : ''}`} onClick={() => { setSelected([x,y]); setFeedback(undefined); }}><span /></button>
+                ))}
+              </div>
+            ))}
             <span className="diagonal diagonal--positive" aria-hidden="true" /><span className="diagonal diagonal--negative" aria-hidden="true" />
           </div>
           <div className="axis-labels" aria-hidden="true"><span>x</span><span>y</span></div>

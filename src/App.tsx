@@ -1,42 +1,50 @@
+import { lazy, Suspense } from 'react';
 import { Navigate, Route, Routes } from 'react-router-dom';
 import { AppShell } from './components/navigation/AppShell';
-import { CodexPage } from './pages/CodexPage';
-import { EncounterPage } from './pages/EncounterPage';
-import { MapPage } from './pages/MapPage';
-import { ReviewPage } from './pages/ReviewPage';
-import { TrainingPage } from './pages/TrainingPage';
-import { ProofPage } from './pages/ProofPage';
-import { MicroquestPage } from './pages/MicroquestPage';
-import { CampaignPage } from './pages/CampaignPage';
-import { AnalyticalCampaignPage } from './pages/AnalyticalCampaignPage';
-import { CoordinateLabPage } from './pages/CoordinateLabPage';
-import { OfficialQuest15Page } from './pages/OfficialQuest15Page';
-import { VerticalSlicePage } from './pages/VerticalSlicePage';
+
+const MapPage = lazy(() => import('./pages/MapPage').then((module) => ({ default: module.MapPage })));
+const EncounterPage = lazy(() => import('./pages/EncounterPage').then((module) => ({ default: module.EncounterPage })));
+const CodexPage = lazy(() => import('./pages/CodexPage').then((module) => ({ default: module.CodexPage })));
+const ReviewPage = lazy(() => import('./pages/ReviewPage').then((module) => ({ default: module.ReviewPage })));
+const TrainingPage = lazy(() => import('./pages/TrainingPage').then((module) => ({ default: module.TrainingPage })));
+const ProofPage = lazy(() => import('./pages/ProofPage').then((module) => ({ default: module.ProofPage })));
+const MicroquestPage = lazy(() => import('./pages/MicroquestPage').then((module) => ({ default: module.MicroquestPage })));
+const CampaignPage = lazy(() => import('./pages/CampaignPage').then((module) => ({ default: module.CampaignPage })));
+const AnalyticalCampaignPage = lazy(() => import('./pages/AnalyticalCampaignPage').then((module) => ({ default: module.AnalyticalCampaignPage })));
+const CoordinateLabPage = lazy(() => import('./pages/CoordinateLabPage').then((module) => ({ default: module.CoordinateLabPage })));
+const OfficialQuest15Page = lazy(() => import('./pages/OfficialQuest15Page').then((module) => ({ default: module.OfficialQuest15Page })));
+const VerticalSlicePage = lazy(() => import('./pages/VerticalSlicePage').then((module) => ({ default: module.VerticalSlicePage })));
+
+function PageLoader() {
+  return <div className="page-loader" role="status">Abrindo território…</div>;
+}
 
 export function App() {
   return (
-    <Routes>
-      <Route element={<AppShell />}>
-        <Route index element={<Navigate to="/map" replace />} />
-        <Route path="map" element={<MapPage />} />
-        <Route path="encounter/:id" element={<EncounterPage />} />
-        <Route path="codex" element={<CodexPage />} />
-        <Route path="codex/:id" element={<CodexPage />} />
-        <Route path="training" element={<TrainingPage />} />
-        <Route path="proof/:id" element={<ProofPage />} />
-        <Route path="microquest/:id" element={<MicroquestPage />} />
-        <Route path="campaign/euclidean" element={<CampaignPage />} />
-        <Route path="campaign/euclidean/:regionId" element={<CampaignPage />} />
-        <Route path="campaign/euclidean/:regionId/:questId" element={<CampaignPage />} />
-        <Route path="campaign/analytical" element={<AnalyticalCampaignPage />} />
-        <Route path="campaign/analytical/:regionId" element={<AnalyticalCampaignPage />} />
-        <Route path="campaign/analytical/:regionId/:questId" element={<AnalyticalCampaignPage />} />
-        <Route path="lab/coordinates" element={<CoordinateLabPage />} />
-        <Route path="encounter/official-q15" element={<OfficialQuest15Page />} />
-        <Route path="vertical-slice" element={<VerticalSlicePage />} />
-        <Route path="review" element={<ReviewPage />} />
-        <Route path="*" element={<Navigate to="/map" replace />} />
-      </Route>
-    </Routes>
+    <Suspense fallback={<PageLoader />}>
+      <Routes>
+        <Route element={<AppShell />}>
+          <Route index element={<Navigate to="/map" replace />} />
+          <Route path="map" element={<MapPage />} />
+          <Route path="encounter/official-q15" element={<OfficialQuest15Page />} />
+          <Route path="encounter/:id" element={<EncounterPage />} />
+          <Route path="codex" element={<CodexPage />} />
+          <Route path="codex/:id" element={<CodexPage />} />
+          <Route path="training" element={<TrainingPage />} />
+          <Route path="proof/:id" element={<ProofPage />} />
+          <Route path="microquest/:id" element={<MicroquestPage />} />
+          <Route path="campaign/euclidean" element={<CampaignPage />} />
+          <Route path="campaign/euclidean/:regionId" element={<CampaignPage />} />
+          <Route path="campaign/euclidean/:regionId/:questId" element={<CampaignPage />} />
+          <Route path="campaign/analytical" element={<AnalyticalCampaignPage />} />
+          <Route path="campaign/analytical/:regionId" element={<AnalyticalCampaignPage />} />
+          <Route path="campaign/analytical/:regionId/:questId" element={<AnalyticalCampaignPage />} />
+          <Route path="lab/coordinates" element={<CoordinateLabPage />} />
+          <Route path="vertical-slice" element={<VerticalSlicePage />} />
+          <Route path="review" element={<ReviewPage />} />
+          <Route path="*" element={<Navigate to="/map" replace />} />
+        </Route>
+      </Routes>
+    </Suspense>
   );
 }

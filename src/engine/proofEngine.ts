@@ -42,17 +42,18 @@ function orderedEqual(left: string[], right: string[]) {
 }
 
 function matchesAlternative(step: ProofStep, candidate: ProofCandidate, alternative: ProofStepAlternative) {
-  const objects = alternative.involvedObjects ?? step.involvedObjects;
-  const relation = alternative.relation ?? step.relation;
-  const justification = alternative.justification ?? step.justification;
+  if (step.interaction === 'build-step') {
+    return sameMembers(alternative.involvedObjects ?? step.involvedObjects, candidate.involvedObjects) &&
+      (alternative.relation ?? step.relation) === candidate.relation &&
+      (alternative.justification ?? step.justification) === candidate.justification;
+  }
+  if (step.interaction === 'complete-justification') {
+    return (alternative.justification ?? step.justification) === candidate.justification;
+  }
   const answers = alternative.answerIds ?? step.expectedAnswerIds;
-  const answersMatch = step.interaction === 'order-cards'
+  return step.interaction === 'order-cards'
     ? orderedEqual(answers, candidate.answerIds)
     : sameMembers(answers, candidate.answerIds);
-  return sameMembers(objects, candidate.involvedObjects) &&
-    relation === candidate.relation &&
-    justification === candidate.justification &&
-    answersMatch;
 }
 
 export function validateProofStep(

@@ -10,7 +10,9 @@ function regionUnlocked(order: number, completedEncounterIds: string[]) {
   const previous = euclideanCampaignRegions.find((region) => region.order === order - 1);
   if (!previous) return false;
   const previousPlayable = euclideanCampaignQuests.filter((quest) => quest.regionId === previous.id && quest.playableRoute);
-  return previousPlayable.length > 0 && previousPlayable.every((quest) => completedEncounterIds.some((id) => quest.playableRoute?.includes(id.replace('proof:', ''))));
+  return previousPlayable.length === 0
+    ? false
+    : previousPlayable.every((quest) => completedEncounterIds.some((id) => quest.playableRoute?.includes(id.replace('proof:', ''))));
 }
 
 export function CampaignPage() {
@@ -64,7 +66,10 @@ export function CampaignPage() {
       <div className="campaign-region-grid">
         {euclideanCampaignRegions.map((item) => {
           const unlocked = regionUnlocked(item.order, progress.completedEncounterIds);
-          return <Link key={item.id} to={unlocked ? `/campaign/euclidean/${item.id}` : '#'} aria-disabled={!unlocked} className={unlocked ? 'campaign-region-card' : 'campaign-region-card is-locked'} style={{ '--campaign-accent': item.accent } as CSSProperties}><span>{unlocked ? <MapPinned /> : <LockKeyhole />}</span><div><small>Região {String(item.order).padStart(2, '0')} · {item.subtitle}</small><h2>{item.title}</h2><p>{unlocked ? item.description : 'Complete os encounters da região anterior para dissipar a névoa.'}</p></div></Link>;
+          const content = <><span>{unlocked ? <MapPinned /> : <LockKeyhole />}</span><div><small>Região {String(item.order).padStart(2, '0')} · {item.subtitle}</small><h2>{item.title}</h2><p>{unlocked ? item.description : 'Complete os encounters da região anterior para dissipar a névoa.'}</p></div></>;
+          return unlocked
+            ? <Link key={item.id} to={`/campaign/euclidean/${item.id}`} className="campaign-region-card" style={{ '--campaign-accent': item.accent } as CSSProperties}>{content}</Link>
+            : <article key={item.id} aria-label={`${item.title} bloqueada`} className="campaign-region-card is-locked" style={{ '--campaign-accent': item.accent } as CSSProperties}>{content}</article>;
         })}
       </div>
     </section>
