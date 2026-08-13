@@ -1,6 +1,7 @@
-import { ArrowLeft, Check, Lightbulb, RotateCcw } from 'lucide-react';
+import { ArrowLeft, Lightbulb } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
+import { FeedbackPanel, QuestFrame, UnlockBanner } from '../components/rpg';
 import { findEncounter } from '../data/bootstrap';
 import { useProgress } from '../state/progress';
 
@@ -11,6 +12,7 @@ export function EncounterPage() {
   const [stepIndex, setStepIndex] = useState(0);
   const [selectedIds, setSelectedIds] = useState<string[]>([]);
   const [feedback, setFeedback] = useState<'correct' | 'incorrect'>();
+  const [completed, setCompleted] = useState(false);
 
   const step = encounter?.steps[stepIndex];
   const options = useMemo(() => {
@@ -59,12 +61,27 @@ export function EncounterPage() {
       const taughtSkill = encounter.teaches[0] ?? 'opv';
       const codexEntryId = `codex-${taughtSkill}`;
       completeEncounter(encounter.id, taughtSkill, codexEntryId);
+      setCompleted(true);
       return;
     }
     setStepIndex((value) => value + 1);
     setSelectedIds([]);
     setFeedback(undefined);
   };
+
+  if (completed) {
+    return (
+      <section className="page encounter-page">
+        <UnlockBanner title="Ângulos opostos pelo vértice">
+          A relação foi formalizada e registrada no Codex Euclidiano.
+        </UnlockBanner>
+        <div className="completion-actions">
+          <Link className="primary-action" to="/codex/codex-opv">Abrir registro</Link>
+          <Link className="secondary-action" to="/map">Voltar ao mapa</Link>
+        </div>
+      </section>
+    );
+  }
 
   return (
     <section className="page encounter-page">
@@ -77,6 +94,7 @@ export function EncounterPage() {
         <span>{stepIndex + 1}/{encounter.steps.length}</span>
       </header>
 
+      <QuestFrame label={encounter.title}>
       <div className="encounter-layout">
         <div className="geometry-stage" aria-label="Duas retas concorrentes no ponto O">
           <div className="line line--one" />
@@ -107,13 +125,11 @@ export function EncounterPage() {
           </div>
 
           {feedback && (
-            <div className={`feedback feedback--${feedback}`} role="status">
-              {feedback === 'correct' ? (
-                <><Check size={18} /> Relação sustentada. Você pode avançar.</>
-              ) : (
-                <><RotateCcw size={18} /> Revise os lados dos ângulos e tente novamente.</>
-              )}
-            </div>
+            <FeedbackPanel state={feedback}>
+              {feedback === 'correct'
+                ? 'Relação sustentada. Você pode avançar.'
+                : 'Revise os lados dos ângulos e tente novamente.'}
+            </FeedbackPanel>
           )}
 
           <button
@@ -135,6 +151,7 @@ export function EncounterPage() {
           </button>
         </div>
       </div>
+      </QuestFrame>
     </section>
   );
 }

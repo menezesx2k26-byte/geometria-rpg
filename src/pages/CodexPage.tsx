@@ -1,13 +1,16 @@
-import { BookOpen, LockKeyhole } from 'lucide-react';
+import { LockKeyhole } from 'lucide-react';
 import { Link, useParams } from 'react-router-dom';
-import { codexEntries, findCodexEntry } from '../data/bootstrap';
+import { codexEntries, findCodexEntry, skills } from '../data/bootstrap';
 import { Math } from '../components/math/Math';
+import { CodexCard, InventorySkillChip } from '../components/rpg';
 import { useProgress } from '../state/progress';
 
 export function CodexPage() {
   const { id } = useParams();
   const { progress } = useProgress();
   const entry = id ? findCodexEntry(id) : undefined;
+  const entrySkill = entry ? skills.find((skill) => skill.id === entry.skillId) : undefined;
+  const entryProfile = entrySkill ? progress.skills[entrySkill.id] : undefined;
 
   if (entry) {
     const unlocked = progress.discoveredCodexEntryIds.includes(entry.id) || entry.unlockedByDefault;
@@ -17,6 +20,9 @@ export function CodexPage() {
         {unlocked ? (
           <article className="codex-scroll">
             <span className="eyebrow">Teorema descoberto</span>
+            {entrySkill && entryProfile && (
+              <InventorySkillChip skill={entrySkill} state={entryProfile.state} />
+            )}
             <h1>{entry.title}</h1>
             <p>{entry.summary}</p>
             <blockquote>{entry.statement}</blockquote>
@@ -35,11 +41,7 @@ export function CodexPage() {
       <div className="codex-grid">
         {codexEntries.map((item) => {
           const unlocked = progress.discoveredCodexEntryIds.includes(item.id) || item.unlockedByDefault;
-          return unlocked ? (
-            <Link className="codex-card" to={`/codex/${item.id}`} key={item.id}><BookOpen /><small>{item.skillId.toUpperCase()}</small><h2>{item.title}</h2><p>{item.summary}</p></Link>
-          ) : (
-            <article className="codex-card is-locked" key={item.id}><LockKeyhole /><small>SELADO</small><h2>Descoberta não registrada</h2><p>Avance pela trilha para revelar.</p></article>
-          );
+          return <CodexCard key={item.id} entry={item} unlocked={Boolean(unlocked)} />;
         })}
       </div>
     </section>

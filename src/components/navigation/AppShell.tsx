@@ -1,5 +1,6 @@
-import { BookOpen, Dumbbell, Map, RotateCcw, ShieldCheck } from 'lucide-react';
+import { BookOpen, Dumbbell, Map, RotateCcw } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
+import { RPGHeader } from '../rpg';
 
 const navItems = [
   { to: '/map', label: 'Mapa', icon: Map },
@@ -11,18 +12,7 @@ const navItems = [
 export function AppShell() {
   return (
     <div className="app-shell">
-      <header className="topbar">
-        <NavLink to="/map" className="brand" aria-label="Geometria RPG — mapa">
-          <span className="brand__mark">G</span>
-          <span>
-            <strong>Geometria RPG</strong>
-            <small>Academia Euclidiana</small>
-          </span>
-        </NavLink>
-        <div className="topbar__status">
-          <ShieldCheck size={15} /> Progresso local
-        </div>
-      </header>
+      <RPGHeader />
 
       <main className="main-content">
         <Outlet />

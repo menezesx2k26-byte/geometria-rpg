@@ -5,6 +5,7 @@ import type {
   Region,
   Skill,
 } from '../types/domain';
+import { assetMap } from './assetMap';
 import { assertValidContent } from './contentValidation';
 
 const allMasteryDimensions: MasteryDimension[] = [
@@ -14,15 +15,6 @@ const allMasteryDimensions: MasteryDimension[] = [
   'reproduction',
   'transfer',
 ];
-
-export const assetManifest = {
-  'angles-core': '/assets/geometria_rpg_assets/04_angulos.png',
-  'congruence-core': '/assets/geometria_rpg_assets/01_congruencia_core.png',
-  'congruence-cases': '/assets/geometria_rpg_assets/03_casos_congruencia_e_teoremas.png',
-  'cevians-core': '/assets/geometria_rpg_assets/02_cevianas.png',
-  'isosceles-core': '/assets/geometria_rpg_assets/05_triangulo_isosceles.png',
-  'encounter-quest': '/assets/geometria_rpg_assets/08_exercicios_quests_bossproof.png',
-} as const;
 
 type SkillSeed = Omit<Skill, 'unlocks' | 'masteryDimensions'> & {
   masteryDimensions?: MasteryDimension[];
@@ -413,7 +405,7 @@ export const codexEntries: CodexEntry[] = skills.map((skill) => ({
   sourceRefs: skill.sourceRefs,
 }));
 
-assertValidContent({ skills, regions, encounters, codexEntries, assetManifest });
+assertValidContent({ skills, regions, encounters, codexEntries, assetManifest: assetMap });
 
 export function findEncounter(id: string) {
   return encounters.find((encounter) => encounter.id === id);
