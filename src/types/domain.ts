@@ -1,22 +1,49 @@
 export type SkillState = 'locked' | 'available' | 'practicing' | 'mastered';
-export type EncounterKind = 'investigation' | 'application' | 'boss-proof';
-export type EncounterStepKind =
-  | 'observe'
-  | 'select-object'
-  | 'select-relation'
-  | 'justify'
-  | 'construct'
-  | 'calculate'
-  | 'formalize';
+export type SkillType =
+  | 'definition'
+  | 'postulate'
+  | 'theorem'
+  | 'corollary'
+  | 'technique'
+  | 'property'
+  | 'algebra'
+  | 'logic';
+
+export type MasteryDimension =
+  | 'recognition'
+  | 'application'
+  | 'justification'
+  | 'reproduction'
+  | 'transfer';
+
+export type FogOfWarVisibility = 'hiddenUntilDiscovered' | 'visibleButLocked';
+export type ContentSource =
+  | 'Aula'
+  | 'Lista Euclidiana'
+  | 'Lista Analítica'
+  | 'Complemento';
+
+export interface SourceReference {
+  origin: ContentSource;
+  reference: string;
+}
 
 export interface Skill {
   id: string;
   title: string;
   shortTitle: string;
   description: string;
+  type: SkillType;
   regionId: string;
+  formalStatement: string;
   prerequisites: string[];
+  unlocks: string[];
+  tags: string[];
+  assetKey: string;
   codexEntryId: string;
+  masteryDimensions: MasteryDimension[];
+  sourceRefs: SourceReference[];
+  visibility: FogOfWarVisibility;
 }
 
 export interface Region {
@@ -27,7 +54,18 @@ export interface Region {
   skillIds: string[];
   encounterIds: string[];
   accent: string;
+  visibility: FogOfWarVisibility;
 }
+
+export type EncounterKind = 'investigation' | 'application' | 'boss-proof';
+export type EncounterStepKind =
+  | 'observe'
+  | 'select-object'
+  | 'select-relation'
+  | 'justify'
+  | 'construct'
+  | 'calculate'
+  | 'formalize';
 
 export interface GeometryObject {
   id: string;
@@ -60,19 +98,33 @@ export interface EncounterStep {
   expectedIds: string[];
 }
 
+export interface CompletionRules {
+  requiredStepIds: string[];
+  minimumCorrectSteps: number;
+  allowHints: boolean;
+}
+
 export interface Encounter {
   id: string;
   regionId: string;
   title: string;
   subtitle: string;
   kind: EncounterKind;
+  source: SourceReference;
+  sourceQuestion: string;
   difficulty: 1 | 2 | 3 | 4 | 5;
-  skillIds: string[];
+  requires: string[];
+  teaches: string[];
+  reinforces: string[];
+  diagnosticTags: DiagnosticTag[];
+  steps: EncounterStep[];
+  completionRules: CompletionRules;
+  recoveryEncounters: string[];
   briefing: string;
+  assetKey: string;
   objects: GeometryObject[];
   relations: GeometryRelation[];
   justifications: Justification[];
-  steps: EncounterStep[];
 }
 
 export interface ProofStep {
@@ -115,10 +167,17 @@ export interface Attempt {
   attemptedAt: string;
 }
 
+export interface DimensionMastery {
+  dimension: MasteryDimension;
+  score: number;
+  attempts: number;
+}
+
 export interface MasteryProfile {
   skillId: string;
   state: SkillState;
   mastery: number;
+  dimensions: DimensionMastery[];
   correctAttempts: number;
   totalAttempts: number;
   lastPracticedAt?: string;
@@ -129,6 +188,7 @@ export interface UserProgress {
   skills: Record<string, MasteryProfile>;
   attempts: Attempt[];
   completedEncounterIds: string[];
+  discoveredSkillIds: string[];
   discoveredCodexEntryIds: string[];
 }
 
@@ -140,4 +200,5 @@ export interface CodexEntry {
   statement: string;
   formula?: string;
   unlockedByDefault?: boolean;
+  sourceRefs: SourceReference[];
 }

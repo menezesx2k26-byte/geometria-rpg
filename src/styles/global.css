@@ -42,10 +42,12 @@ p { color: var(--muted); line-height: 1.65; }
 .skill-node { position: relative; display: grid; grid-template-columns: 44px 1fr; gap: 14px; border: 1px solid var(--line); border-radius: 18px; padding: 18px; background: linear-gradient(145deg, rgba(27,36,31,.92), rgba(16,22,19,.92)); }
 .skill-node__index { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 50%; color: var(--accent-ink); background: var(--accent); font-weight: 900; }
 .skill-node small, .encounter-card small { color: var(--accent); font-weight: 800; letter-spacing: .1em; text-transform: uppercase; }
-.skill-node h2 { margin: 5px 0; font-size: 1.15rem; }
+.skill-node h2, .skill-node h3 { margin: 5px 0; font-size: 1.15rem; }
 .skill-node p { margin: 0; font-size: .85rem; }
 .skill-node--locked { opacity: .48; }
 .skill-node--locked .skill-node__index { color: var(--muted); background: #252c28; }
+.map-region { margin: 36px 0; }
+.map-region__header h2 { margin: 5px 0 0; }
 .state-label { grid-column: 2; justify-self: start; border-radius: 999px; padding: 4px 8px; color: var(--muted); background: rgba(255,255,255,.05); font-size: .65rem; text-transform: uppercase; }
 .encounter-card { display: grid; gap: 16px; border: 1px solid rgba(215,255,100,.35); border-radius: 22px; padding: 22px; background: linear-gradient(145deg, rgba(45,62,33,.56), rgba(17,24,20,.95)); }
 .encounter-card__icon { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 12px; color: var(--accent-ink); background: var(--accent); }

@@ -5,15 +5,23 @@ import type { Attempt, DiagnosticTag, UserProgress } from '../types/domain';
 const STORAGE_KEY = 'geometria-rpg:progress:v1';
 
 function createInitialProgress(): UserProgress {
+  const discoveredSkillIds = skills
+    .filter((skill) => skill.prerequisites.length === 0)
+    .map((skill) => skill.id);
   return {
     version: 1,
     skills: Object.fromEntries(
-      skills.map((skill, index) => [
+      skills.map((skill) => [
         skill.id,
         {
           skillId: skill.id,
-          state: index === 0 ? 'available' : 'locked',
+          state: skill.prerequisites.length === 0 ? 'available' : 'locked',
           mastery: 0,
+          dimensions: skill.masteryDimensions.map((dimension) => ({
+            dimension,
+            score: 0,
+            attempts: 0,
+          })),
           correctAttempts: 0,
           totalAttempts: 0,
         },
@@ -21,7 +29,10 @@ function createInitialProgress(): UserProgress {
     ),
     attempts: [],
     completedEncounterIds: [],
-    discoveredCodexEntryIds: ['codex-opv'],
+    discoveredSkillIds,
+    discoveredCodexEntryIds: skills
+      .filter((skill) => skill.prerequisites.length === 0)
+      .map((skill) => skill.codexEntryId),
   };
 }
 
@@ -29,7 +40,10 @@ function loadProgress(): UserProgress {
   if (typeof window === 'undefined') return createInitialProgress();
   try {
     const stored = window.localStorage.getItem(STORAGE_KEY);
-    return stored ? (JSON.parse(stored) as UserProgress) : createInitialProgress();
+    if (!stored) return createInitialProgress();
+    const parsed = JSON.parse(stored) as Partial<UserProgress>;
+    if (!parsed.skills || !parsed.discoveredSkillIds) return createInitialProgress();
+    return parsed as UserProgress;
   } catch {
     return createInitialProgress();
   }
@@ -84,15 +98,26 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
             lastPracticedAt: new Date().toISOString(),
           },
         };
-        const nextSkill = skills.find((skill) => skill.prerequisites.includes(skillId));
-        const nextProfile = nextSkill ? nextSkills[nextSkill.id] : undefined;
-        if (nextSkill && nextProfile) {
-          nextSkills[nextSkill.id] = { ...nextProfile, state: 'available' };
+        const newlyAvailable = skills.filter(
+          (skill) =>
+            skill.prerequisites.includes(skillId) &&
+            skill.prerequisites.every((id) => nextSkills[id]?.state === 'mastered'),
+        );
+        for (const nextSkill of newlyAvailable) {
+          const nextProfile = nextSkills[nextSkill.id];
+          if (nextProfile) nextSkills[nextSkill.id] = { ...nextProfile, state: 'available' };
         }
         commit({
           ...progress,
           skills: nextSkills,
           completedEncounterIds: [...new Set([...progress.completedEncounterIds, encounterId])],
+          discoveredSkillIds: [
+            ...new Set([
+              ...progress.discoveredSkillIds,
+              skillId,
+              ...newlyAvailable.map((skill) => skill.id),
+            ]),
+          ],
           discoveredCodexEntryIds: [
             ...new Set([...progress.discoveredCodexEntryIds, codexEntryId]),
           ],

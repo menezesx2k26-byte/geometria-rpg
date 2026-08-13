@@ -56,7 +56,9 @@ export function EncounterPage() {
 
   const advance = () => {
     if (stepIndex === encounter.steps.length - 1) {
-      completeEncounter(encounter.id, encounter.skillIds[0] ?? 'opv', 'codex-opv');
+      const taughtSkill = encounter.teaches[0] ?? 'opv';
+      const codexEntryId = `codex-${taughtSkill}`;
+      completeEncounter(encounter.id, taughtSkill, codexEntryId);
       return;
     }
     setStepIndex((value) => value + 1);
