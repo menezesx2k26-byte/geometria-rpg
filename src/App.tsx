@@ -6,6 +6,7 @@ import { MapPage } from './pages/MapPage';
 import { ReviewPage } from './pages/ReviewPage';
 import { TrainingPage } from './pages/TrainingPage';
 import { ProofPage } from './pages/ProofPage';
+import { MicroquestPage } from './pages/MicroquestPage';
 
 export function App() {
   return (
@@ -18,6 +19,7 @@ export function App() {
         <Route path="codex/:id" element={<CodexPage />} />
         <Route path="training" element={<TrainingPage />} />
         <Route path="proof/:id" element={<ProofPage />} />
+        <Route path="microquest/:id" element={<MicroquestPage />} />
         <Route path="review" element={<ReviewPage />} />
         <Route path="*" element={<Navigate to="/map" replace />} />
       </Route>

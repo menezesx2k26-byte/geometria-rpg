@@ -7,6 +7,7 @@ import { findEncounter, skills } from '../data/bootstrap';
 import { validateApplication } from '../engine/encounterEngine';
 import { useProgress } from '../state/progress';
 import type { Encounter } from '../types/domain';
+import type { DiagnosticTag, MasteryDimension } from '../types/domain';
 
 function EncounterSession({ encounter }: { encounter: Encounter }) {
   const { completeEncounter, recordAttempt } = useProgress();
@@ -36,12 +37,35 @@ function EncounterSession({ encounter }: { encounter: Encounter }) {
 
   const applySkill = () => {
     const result = validateApplication(encounter, knownRelationIds, selectedSkillId, selectedObjectIds);
+    const rule = encounter.applicationRules.find((item) => item.id === result.ruleId);
+    const diagnosticTags: DiagnosticTag[] = result.correct
+      ? []
+      : result.kind === 'wrong-order'
+        ? ['ordered-correspondence']
+        : rule?.skillId === 'opv'
+          ? ['opv-recognition']
+          : rule?.skillId === 'sas' && result.kind === 'missing-relation'
+            ? ['proof-gap']
+            : rule?.skillId === 'sas'
+              ? ['included-angle']
+              : ['ordered-correspondence'];
+    const masteryDimensions: MasteryDimension[] = rule?.skillId === 'sas'
+      ? ['application', 'justification', 'transfer']
+      : rule?.skillId === 'opv'
+        ? ['recognition', 'application', 'justification']
+        : ['recognition', 'application'];
     recordAttempt(
       encounter.id,
       result.ruleId ?? 'application',
       [selectedSkillId ?? 'no-skill', ...selectedObjectIds],
       result.correct,
-      encounter.diagnosticTags,
+      diagnosticTags,
+      {
+        skillIds: rule ? [rule.skillId] : [],
+        masteryDimensions,
+        hintsUsed: visibleHintCount,
+        position: `/encounter/${encounter.id}`,
+      },
     );
     setFeedback({ state: result.correct ? 'correct' : 'incorrect', message: result.message });
     if (!result.correct) return;

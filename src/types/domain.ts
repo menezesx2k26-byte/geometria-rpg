@@ -242,7 +242,19 @@ export type DiagnosticTag =
   | 'relation-selection'
   | 'justification-choice'
   | 'proof-order'
-  | 'algebra-translation';
+  | 'algebra-translation'
+  | 'ordered-correspondence'
+  | 'opv-recognition'
+  | 'included-angle'
+  | 'midpoint-definition'
+  | 'bisector-definition'
+  | 'perpendicularity'
+  | 'segment-vs-measure'
+  | 'algebra-linear'
+  | 'distance-formula'
+  | 'absolute-value'
+  | 'proof-gap'
+  | 'construction-choice';
 
 export interface Attempt {
   encounterId: string;
@@ -250,6 +262,9 @@ export interface Attempt {
   selectedIds: string[];
   correct: boolean;
   diagnosticTags: DiagnosticTag[];
+  skillIds: string[];
+  masteryDimensions: MasteryDimension[];
+  hintsUsed: number;
   attemptedAt: string;
 }
 
@@ -270,12 +285,38 @@ export interface MasteryProfile {
 }
 
 export interface UserProgress {
-  version: 1;
+  version: 2;
   skills: Record<string, MasteryProfile>;
   attempts: Attempt[];
   completedEncounterIds: string[];
   discoveredSkillIds: string[];
   discoveredCodexEntryIds: string[];
+  errorTagCounts: Partial<Record<DiagnosticTag, number>>;
+  hintsUsed: number;
+  lastPosition: string;
+  recommendedMicroquestIds: string[];
+  completedMicroquestIds: string[];
+}
+
+export interface MicroquestOption {
+  id: string;
+  label: string;
+}
+
+export interface Microquest {
+  id: string;
+  title: string;
+  competency: string;
+  duration: string;
+  prompt: string;
+  options: MicroquestOption[];
+  correctOptionId: string;
+  successMessage: string;
+  errorMessage: string;
+  diagnosticTag: DiagnosticTag;
+  skillId: string;
+  masteryDimensions: MasteryDimension[];
+  returnEncounterId: string;
 }
 
 export interface CodexEntry {

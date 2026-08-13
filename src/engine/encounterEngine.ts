@@ -2,6 +2,7 @@ import type { Encounter, EncounterApplicationRule, SemanticErrorRule } from '../
 
 export interface ApplicationResult {
   correct: boolean;
+  kind: 'accepted' | 'complete' | 'no-skill' | 'wrong-skill' | 'missing-relation' | 'wrong-order' | 'wrong-objects';
   message: string;
   ruleId?: string;
   producedRelationIds: string[];
@@ -25,38 +26,39 @@ export function validateApplication(
     (rule) => !rule.producesRelationIds.every((id) => knownRelationIds.includes(id)),
   );
   if (!pendingRules.length) {
-    return { correct: false, message: 'Todas as relações necessárias já foram registradas.', producedRelationIds: [] };
+    return { correct: false, kind: 'complete', message: 'Todas as relações necessárias já foram registradas.', producedRelationIds: [] };
   }
 
   if (!selectedSkillId) {
-    return { correct: false, message: 'Escolha uma skill do inventário antes de selecionar os objetos.', producedRelationIds: [] };
+    return { correct: false, kind: 'no-skill', message: 'Escolha uma skill do inventário antes de selecionar os objetos.', producedRelationIds: [] };
   }
 
   const rule = pendingRules.find((candidate) => candidate.skillId === selectedSkillId) ?? pendingRules[0];
   if (!rule) {
-    return { correct: false, message: 'Nenhuma aplicação está disponível neste momento.', producedRelationIds: [] };
+    return { correct: false, kind: 'complete', message: 'Nenhuma aplicação está disponível neste momento.', producedRelationIds: [] };
   }
   if (rule.skillId !== selectedSkillId) {
-    return { correct: false, message: semanticMessage(rule, 'wrong-skill'), ruleId: rule.id, producedRelationIds: [] };
+    return { correct: false, kind: 'wrong-skill', message: semanticMessage(rule, 'wrong-skill'), ruleId: rule.id, producedRelationIds: [] };
   }
 
   const missingRelations = rule.requiresRelationIds.filter((id) => !knownRelationIds.includes(id));
   if (missingRelations.length) {
-    return { correct: false, message: semanticMessage(rule, 'missing-relation'), ruleId: rule.id, producedRelationIds: [] };
+    return { correct: false, kind: 'missing-relation', message: semanticMessage(rule, 'missing-relation'), ruleId: rule.id, producedRelationIds: [] };
   }
 
   if (rule.orderMatters) {
     const exactOrder = rule.objectIds.every((id, index) => selectedObjectIds[index] === id) && selectedObjectIds.length === rule.objectIds.length;
     if (!exactOrder) {
       const errorKind = sameMembers(rule.objectIds, selectedObjectIds) ? 'wrong-order' : 'wrong-objects';
-      return { correct: false, message: semanticMessage(rule, errorKind), ruleId: rule.id, producedRelationIds: [] };
+      return { correct: false, kind: errorKind, message: semanticMessage(rule, errorKind), ruleId: rule.id, producedRelationIds: [] };
     }
   } else if (!sameMembers(rule.objectIds, selectedObjectIds)) {
-    return { correct: false, message: semanticMessage(rule, 'wrong-objects'), ruleId: rule.id, producedRelationIds: [] };
+    return { correct: false, kind: 'wrong-objects', message: semanticMessage(rule, 'wrong-objects'), ruleId: rule.id, producedRelationIds: [] };
   }
 
   return {
     correct: true,
+    kind: 'accepted',
     message: rule.successMessage,
     ruleId: rule.id,
     producedRelationIds: rule.producesRelationIds,

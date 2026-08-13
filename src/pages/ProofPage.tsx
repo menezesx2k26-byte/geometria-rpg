@@ -11,7 +11,7 @@ import {
   type ProofCandidate,
 } from '../engine/proofEngine';
 import { useProgress } from '../state/progress';
-import type { Proof, ProofChoice, ProofJustification, ProofStep } from '../types/domain';
+import type { DiagnosticTag, MasteryDimension, Proof, ProofChoice, ProofJustification, ProofStep } from '../types/domain';
 
 function ChoiceButton({ choice, selected, order, onClick }: { choice: ProofChoice; selected: boolean; order?: number | undefined; onClick: () => void }) {
   return (
@@ -98,12 +98,43 @@ function ProofSession({ proof, mode }: { proof: Proof; mode: 'training' | 'exam'
   const validate = () => {
     if (!activeStep) return;
     const result = validateProofStep(proof, activeStep, completedStepIds, candidate);
+    const diagnosticTag: DiagnosticTag = result.kind === 'logical-jump'
+      ? 'proof-gap'
+      : activeStep.interaction === 'choose-construction'
+        ? 'construction-choice'
+        : activeStep.interaction === 'assemble-equation'
+          ? 'algebra-linear'
+          : activeStep.justification === 'midpoint'
+            ? 'midpoint-definition'
+            : activeStep.justification === 'angleBisector'
+              ? 'bisector-definition'
+              : activeStep.relation === 'perpendicular'
+                ? 'perpendicularity'
+                : 'proof-gap';
+    const practicedSkillId = activeStep.justification === 'LAL'
+      ? 'sas'
+      : activeStep.justification === 'angleBisector'
+        ? 'angle-bisector'
+        : activeStep.justification === 'midpoint'
+          ? 'midpoint'
+          : proof.id === 'asa-contradiction'
+            ? 'asa'
+            : 'isosceles-special-cevian';
+    const masteryDimensions: MasteryDimension[] = mode === 'exam'
+      ? ['application', 'justification', 'reproduction', 'transfer']
+      : ['application', 'justification', 'reproduction'];
     recordAttempt(
       `proof:${proof.id}`,
       activeStep.id,
       [...candidate.involvedObjects, candidate.relation ?? '', candidate.justification ?? '', ...candidate.answerIds].filter(Boolean),
       result.correct,
-      [result.kind === 'logical-jump' || activeStep.interaction === 'order-cards' ? 'proof-order' : 'justification-choice'],
+      result.correct ? [] : [diagnosticTag],
+      {
+        skillIds: [practicedSkillId],
+        masteryDimensions,
+        hintsUsed: mode === 'training' ? 1 : 0,
+        position: `/proof/${proof.id}?mode=${mode}`,
+      },
     );
     setFeedback({ state: result.correct ? 'correct' : 'incorrect', message: result.message });
     if (!result.correct) return;

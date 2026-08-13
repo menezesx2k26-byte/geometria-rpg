@@ -51,7 +51,7 @@ export function SkillBadge({ skill, state }: { skill: Skill; state: SkillState }
 }
 
 export function MasteryBar({ profile, compact = false }: { profile: MasteryProfile; compact?: boolean }) {
-  const percent = Math.round(profile.mastery * 100);
+  const percent = Math.round(profile.mastery);
   return (
     <div className={compact ? 'mastery-bar mastery-bar--compact' : 'mastery-bar'}>
       <span className="mastery-bar__label">Domínio <strong>{percent}%</strong></span>
