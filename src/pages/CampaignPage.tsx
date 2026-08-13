@@ -60,6 +60,7 @@ export function CampaignPage() {
   return (
     <section className="page">
       <div className="page-heading"><span className="eyebrow">Lista 1 · 43 questões transformadas</span><h1>Campanha Euclidiana</h1><p>Nove regiões convertem a lista em investigação, provas, construções e bosses. Questões sem interação completa permanecem sob névoa, não como lista estática disfarçada.</p></div>
+      <div className="campaign-switch"><span>Campanha Euclidiana</span><Link to="/campaign/analytical">Ir para a Campanha Analítica <ArrowRight size={15} /></Link></div>
       <div className="campaign-region-grid">
         {euclideanCampaignRegions.map((item) => {
           const unlocked = regionUnlocked(item.order, progress.completedEncounterIds);

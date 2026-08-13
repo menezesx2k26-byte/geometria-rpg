@@ -8,6 +8,8 @@ import { TrainingPage } from './pages/TrainingPage';
 import { ProofPage } from './pages/ProofPage';
 import { MicroquestPage } from './pages/MicroquestPage';
 import { CampaignPage } from './pages/CampaignPage';
+import { AnalyticalCampaignPage } from './pages/AnalyticalCampaignPage';
+import { CoordinateLabPage } from './pages/CoordinateLabPage';
 
 export function App() {
   return (
@@ -24,6 +26,10 @@ export function App() {
         <Route path="campaign/euclidean" element={<CampaignPage />} />
         <Route path="campaign/euclidean/:regionId" element={<CampaignPage />} />
         <Route path="campaign/euclidean/:regionId/:questId" element={<CampaignPage />} />
+        <Route path="campaign/analytical" element={<AnalyticalCampaignPage />} />
+        <Route path="campaign/analytical/:regionId" element={<AnalyticalCampaignPage />} />
+        <Route path="campaign/analytical/:regionId/:questId" element={<AnalyticalCampaignPage />} />
+        <Route path="lab/coordinates" element={<CoordinateLabPage />} />
         <Route path="review" element={<ReviewPage />} />
         <Route path="*" element={<Navigate to="/map" replace />} />
       </Route>

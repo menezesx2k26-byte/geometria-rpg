@@ -358,6 +358,12 @@ export interface CampaignRegion {
   questionNumbers: number[];
   bossQuestIds: string[];
   tutorialQuestIds: string[];
+  reusedQuestIds?: string[];
+}
+
+export interface AnalyticalCampaignQuest extends CampaignQuest {
+  algebraSkills: string[];
+  geometrySkills: string[];
 }
 
 export interface CodexEntry {

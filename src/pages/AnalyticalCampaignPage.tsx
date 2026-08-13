@@ -1,0 +1,24 @@
+import { ArrowLeft, ArrowRight, Crown, LockKeyhole, Sigma, Waypoints } from 'lucide-react';
+import type { CSSProperties } from 'react';
+import { Link, useParams } from 'react-router-dom';
+import { Checkpoint } from '../components/rpg';
+import { analyticalCampaignQuests, analyticalCampaignRegions, findAnalyticalQuest, findAnalyticalRegion } from '../data/campaignAnalytical';
+import { useProgress } from '../state/progress';
+
+export function AnalyticalCampaignPage() {
+  const { regionId, questId } = useParams();
+  const { progress } = useProgress();
+  const quest = questId ? findAnalyticalQuest(questId) : undefined;
+  const region = regionId ? findAnalyticalRegion(regionId) : undefined;
+
+  if (quest) return <section className="page"><Link className="back-link" to={`/campaign/analytical/${quest.regionId}`}><ArrowLeft size={16} /> Região</Link><article className="campaign-quest-detail analytical-detail"><span className="eyebrow">Lista Analítica · Questão {quest.number}</span><h1>{quest.title}</h1><p>{quest.sourceQuestion}</p><div className="quest-metadata"><span>Dificuldade <strong>{quest.difficulty}/5</strong></span><span>Prova <strong>{quest.proofType}</strong></span></div><div className="dual-skill-panel"><section><Sigma /><small>Skills algébricas</small>{quest.algebraSkills.map((item) => <span key={item}>{item}</span>)}</section><section><Waypoints /><small>Skills geométricas</small>{quest.geometrySkills.map((item) => <span key={item}>{item}</span>)}</section></div><dl><div><dt>Requer</dt><dd>{quest.requires.join(' · ') || 'Leitura do plano'}</dd></div><div><dt>Ensina</dt><dd>{quest.teaches.join(' · ') || 'Síntese'}</dd></div><div><dt>Reforça</dt><dd>{quest.reinforces.join(' · ') || 'Relações anteriores'}</dd></div><div><dt>Erros comuns</dt><dd>{quest.commonErrors.join(' · ') || 'Sem tag específica'}</dd></div><div><dt>Recuperação</dt><dd>{quest.recoverySkills.join(' · ') || 'Revisão da região'}</dd></div></dl>{quest.playableRoute ? <Link className="primary-action primary-action--wide" to={quest.playableRoute}>Abrir investigação <ArrowRight size={16} /></Link> : <div className="content-planned"><Sigma /><div><strong>Encounter catalogado</strong><p>A modelagem mantém álgebra e geometria explícitas; a interação completa abre quando a névoa da região for removida.</p></div></div>}</article></section>;
+
+  if (region) {
+    const quests = analyticalCampaignQuests.filter((item) => item.regionId === region.id);
+    const reused = (region.reusedQuestIds ?? []).map((id) => analyticalCampaignQuests.find((quest) => quest.id === id)).filter((item) => item !== undefined);
+    return <section className="page"><Link className="back-link" to="/campaign/analytical"><ArrowLeft size={16} /> Campanha</Link><div className="campaign-region-heading" style={{ '--campaign-accent': region.accent } as CSSProperties}><span>{String(region.order).padStart(2,'0')}</span><div><small>{region.subtitle}</small><h1>{region.title}</h1><p>{region.description}</p></div></div><div className="campaign-quest-grid">{quests.map((item) => <Link key={item.id} className={region.bossQuestIds.includes(item.id) ? 'campaign-quest-card is-boss' : 'campaign-quest-card'} to={`/campaign/analytical/${region.id}/${item.id}`}><span>{item.number}</span><div><small>{item.proofType}</small><strong>{item.title}</strong><em>{item.playableRoute ? 'Jogável agora' : 'Catalogado'}</em></div>{region.bossQuestIds.includes(item.id) && <Crown />}</Link>)}</div>{reused.length > 0 && <aside className="reused-quests"><small>Reutilização deliberada</small><p>{reused.map((item) => `Q${item.number}: ${item.title}`).join(' · ')}</p></aside>}<Checkpoint title={region.title} complete={false} /></section>;
+  }
+
+  const firstComplete = progress.completedEncounterIds.includes('coordinate-sign-lab');
+  return <section className="page"><div className="page-heading"><span className="eyebrow">Lista Analítica · 30 questões transformadas</span><h1>Campanha Analítica</h1><p>Treze regiões mantêm a pergunta geométrica visível enquanto a álgebra atua como ferramenta de prova, comparação e otimização.</p></div><div className="campaign-switch"><Link to="/campaign/euclidean"><ArrowLeft size={15} /> Campanha Euclidiana</Link><span>Campanha Analítica</span></div><div className="campaign-region-grid">{analyticalCampaignRegions.map((item) => { const unlocked = item.order === 1 || (item.order === 2 && firstComplete); return <Link key={item.id} to={unlocked ? `/campaign/analytical/${item.id}` : '#'} aria-disabled={!unlocked} className={unlocked ? 'campaign-region-card' : 'campaign-region-card is-locked'} style={{ '--campaign-accent': item.accent } as CSSProperties}><span>{unlocked ? <Waypoints /> : <LockKeyhole />}</span><div><small>Região {String(item.order).padStart(2,'0')} · {item.subtitle}</small><h2>{item.title}</h2><p>{unlocked ? item.description : 'Complete a investigação anterior para liberar este território.'}</p></div></Link>; })}</div></section>;
+}
