@@ -1,9 +1,10 @@
-import { BookOpen, Dumbbell, Map, RotateCcw } from 'lucide-react';
+import { BookOpen, Dumbbell, Map, RotateCcw, Scroll } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { RPGHeader } from '../rpg';
 
 const navItems = [
   { to: '/map', label: 'Mapa', icon: Map },
+  { to: '/campaign/euclidean', label: 'Campanha', icon: Scroll },
   { to: '/training', label: 'Treino', icon: Dumbbell },
   { to: '/codex', label: 'Codex', icon: BookOpen },
   { to: '/review', label: 'Revisão', icon: RotateCcw },
@@ -18,7 +19,7 @@ export function AppShell() {
         <Outlet />
       </main>
 
-      <nav className="bottom-nav" aria-label="Navegação principal">
+      <nav className="bottom-nav bottom-nav--five" aria-label="Navegação principal">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={({ isActive }) => (isActive ? 'is-active' : '')}>
             <Icon size={19} />

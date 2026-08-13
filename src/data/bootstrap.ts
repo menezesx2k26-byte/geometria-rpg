@@ -20,6 +20,32 @@ type SkillSeed = Omit<Skill, 'unlocks' | 'masteryDimensions'> & {
   masteryDimensions?: MasteryDimension[];
 };
 
+function campaignSkill(
+  id: string,
+  title: string,
+  type: Skill['type'],
+  regionId: string,
+  formalStatement: string,
+  prerequisites: string[],
+  tags: string[],
+): SkillSeed {
+  return {
+    id,
+    title,
+    shortTitle: title,
+    description: formalStatement,
+    type,
+    regionId,
+    formalStatement,
+    prerequisites,
+    tags,
+    assetKey: regionId === 'angle-temple' ? 'angles-core' : regionId === 'cevians-sanctuary' ? 'cevians-core' : 'congruence-cases',
+    codexEntryId: `codex-${id}`,
+    sourceRefs: [{ origin: 'Lista Euclidiana', reference: 'Campanha Euclidiana · Lista 1' }],
+    visibility: 'hiddenUntilDiscovered',
+  };
+}
+
 const skillSeeds: SkillSeed[] = [
   {
     id: 'segments',
@@ -291,6 +317,31 @@ const skillSeeds: SkillSeed[] = [
     sourceRefs: [{ origin: 'Lista Euclidiana', reference: 'Cevianas no triângulo isósceles' }],
     visibility: 'hiddenUntilDiscovered',
   },
+  campaignSkill('right-angle', 'Ângulo reto', 'definition', 'angle-temple', 'Ângulo reto é o ângulo de medida 90°.', ['angles'], ['ângulo', '90 graus']),
+  campaignSkill('straight-angle', 'Ângulo raso', 'definition', 'angle-temple', 'Ângulo raso é o ângulo de medida 180°.', ['angles'], ['ângulo', '180 graus']),
+  campaignSkill('adjacent-angles', 'Ângulos adjacentes', 'definition', 'angle-temple', 'Ângulos adjacentes compartilham vértice e um lado, sem sobreposição interior.', ['angles'], ['ângulo', 'adjacência']),
+  campaignSkill('angle-algebra', 'Linguagem algébrica angular', 'algebra', 'angle-temple', 'Relações angulares podem ser traduzidas em equações preservando suas justificativas geométricas.', ['complementary-angles', 'supplementary-angles'], ['ângulo', 'álgebra']),
+  campaignSkill('equilateral-triangle', 'Triângulo equilátero', 'definition', 'triangles', 'Triângulo equilátero possui três lados congruentes.', ['triangles'], ['triângulo', 'equilátero']),
+  campaignSkill('scalene-triangle', 'Triângulo escaleno', 'definition', 'triangles', 'Triângulo escaleno não possui lados congruentes entre si.', ['triangles'], ['triângulo', 'escaleno']),
+  campaignSkill('triangle-perimeter', 'Perímetro triangular', 'algebra', 'triangles', 'O perímetro de um triângulo é a soma das medidas de seus três lados.', ['triangles', 'segments'], ['triângulo', 'perímetro']),
+  campaignSkill('cpctc', 'Partes correspondentes', 'property', 'congruence-fortress', 'Partes correspondentes de triângulos congruentes são congruentes.', ['triangle-congruence'], ['congruência', 'CPCTC']),
+  campaignSkill('reflexivity', 'Reflexividade', 'logic', 'congruence-fortress', 'Todo objeto geométrico é congruente ou igual a si mesmo.', ['triangle-congruence'], ['lógica', 'reflexividade']),
+  campaignSkill('equiangular-equilateral', 'Equiângulo implica equilátero', 'corollary', 'congruence-fortress', 'Se os três ângulos de um triângulo são congruentes, então seus três lados são congruentes.', ['isosceles-converse'], ['triângulo', 'converso']),
+  campaignSkill('iff-logic', 'Se e somente se', 'logic', 'congruence-fortress', 'Uma equivalência exige provar uma implicação e sua conversa.', ['isosceles-converse'], ['lógica', 'equivalência']),
+  campaignSkill('triangulation', 'Triangulação', 'technique', 'symmetries', 'Uma diagonal pode decompor um polígono em triângulos para transferir resultados de congruência.', ['sss'], ['construção', 'triangulação']),
+  campaignSkill('perpendicular-bisector', 'Mediatriz', 'definition', 'symmetries', 'A mediatriz de um segmento é a reta perpendicular que passa por seu ponto médio.', ['midpoint', 'altitude'], ['mediatriz', 'perpendicular']),
+  campaignSkill('equidistance', 'Equidistância', 'theorem', 'symmetries', 'Um ponto pertence à mediatriz de um segmento se e somente se é equidistante de suas extremidades.', ['perpendicular-bisector', 'sas'], ['mediatriz', 'distância']),
+  campaignSkill('auxiliary-construction', 'Construção auxiliar', 'technique', 'symmetries', 'Uma construção auxiliar introduz objetos que revelam relações sem alterar as hipóteses.', ['sas'], ['construção', 'prova']),
+  campaignSkill('diagonals', 'Diagonais como ação', 'technique', 'symmetries', 'Traçar diagonais adequadas pode produzir pares de triângulos comparáveis.', ['triangulation'], ['diagonal', 'construção']),
+  campaignSkill('saccheri', 'Quadrilátero de Saccheri', 'theorem', 'symmetries', 'Em um quadrilátero de Saccheri, relações de perpendicularidade e congruência geram simetria entre os lados e ângulos do topo.', ['diagonals', 'sss'], ['Saccheri', 'rigidez']),
+  campaignSkill('interior-angle-sum', 'Soma interna do triângulo', 'theorem', 'inequalities', 'A soma das medidas dos ângulos internos de um triângulo é 180°.', ['triangles', 'supplementary-angles'], ['triângulo', 'soma angular']),
+  campaignSkill('exterior-angle-theorem', 'Teorema do ângulo externo', 'theorem', 'inequalities', 'A medida de um ângulo externo é a soma das medidas dos dois ângulos internos não adjacentes.', ['interior-angle-sum'], ['ângulo externo', 'triângulo']),
+  campaignSkill('triangle-inequality', 'Desigualdade triangular', 'theorem', 'inequalities', 'Em um triângulo, a medida de cada lado é menor que a soma das medidas dos outros dois.', ['triangles', 'auxiliary-construction'], ['triângulo', 'desigualdade']),
+  campaignSkill('angle-side-comparison', 'Comparação lado–ângulo', 'theorem', 'inequalities', 'Em um triângulo, o maior lado se opõe ao maior ângulo e reciprocamente.', ['isosceles-converse', 'triangle-inequality'], ['triângulo', 'comparação']),
+  campaignSkill('reflection', 'Reflexão geométrica', 'technique', 'symmetries', 'Refletir uma figura preserva distâncias e ângulos e pode retificar caminhos quebrados.', ['perpendicular-bisector'], ['reflexão', 'simetria']),
+  campaignSkill('optimization', 'Otimização geométrica', 'technique', 'symmetries', 'Problemas de menor caminho podem ser transformados por isometrias em comparações retilíneas.', ['reflection', 'triangle-inequality'], ['otimização', 'distância']),
+  campaignSkill('contraposition', 'Contraposição', 'logic', 'cevians-sanctuary', 'A implicação P⇒Q pode ser provada pela implicação equivalente não-Q⇒não-P.', ['iff-logic'], ['lógica', 'contraposição']),
+  campaignSkill('equilateral-properties', 'Propriedades do equilátero', 'corollary', 'cevians-sanctuary', 'No triângulo equilátero, medianas, bissetrizes e alturas coincidem em cada vértice.', ['equilateral-triangle', 'isosceles-special-cevian'], ['equilátero', 'cevianas']),
 ];
 
 export const skills: Skill[] = skillSeeds.map((seed) => ({

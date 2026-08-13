@@ -319,6 +319,47 @@ export interface Microquest {
   returnEncounterId: string;
 }
 
+export type CampaignProofType =
+  | 'none'
+  | 'direct'
+  | 'indirect'
+  | 'contradiction'
+  | 'contraposition'
+  | 'construction'
+  | 'optimization'
+  | 'synthesis';
+
+export interface CampaignQuest {
+  id: string;
+  number: number;
+  regionId: string;
+  title: string;
+  sourceQuestion: string;
+  requires: string[];
+  teaches: string[];
+  reinforces: string[];
+  difficulty: 1 | 2 | 3 | 4 | 5;
+  proofType: CampaignProofType;
+  commonErrors: DiagnosticTag[];
+  recoverySkills: string[];
+  playableRoute?: string;
+}
+
+export interface CampaignRegion {
+  id: string;
+  order: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  accent: string;
+  visibility: FogOfWarVisibility;
+  skillIds: string[];
+  encounterIds: string[];
+  questionNumbers: number[];
+  bossQuestIds: string[];
+  tutorialQuestIds: string[];
+}
+
 export interface CodexEntry {
   id: string;
   skillId: string;
