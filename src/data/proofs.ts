@@ -24,6 +24,29 @@ function step(seed: StepSeed): ProofStep {
 
 export const proofs: Proof[] = [
   {
+    id: 'isosceles-base-angles',
+    title: 'O Espelho do Isósceles',
+    subtitle: 'Prova guiada · teorema dos ângulos da base',
+    source: { origin: 'Lista Euclidiana', reference: 'Teorema do triângulo isósceles' },
+    hypothesis: ['AB ≅ AC', 'AD é bissetriz de ∠BAC', 'D pertence a BC'],
+    thesis: '∠ABC ≅ ∠BCA.',
+    objects: [
+      { id: 'triangle-abd', kind: 'triangle', label: '△ABD' }, { id: 'triangle-acd', kind: 'triangle', label: '△ACD' },
+      { id: 'segment-ab', kind: 'segment', label: 'AB' }, { id: 'segment-ac', kind: 'segment', label: 'AC' }, { id: 'segment-ad', kind: 'segment', label: 'AD' },
+      { id: 'angle-bad', kind: 'angle', label: '∠BAD' }, { id: 'angle-cad', kind: 'angle', label: '∠CAD' },
+      { id: 'angle-abc', kind: 'angle', label: '∠ABC' }, { id: 'angle-bca', kind: 'angle', label: '∠BCA' },
+    ],
+    steps: [
+      step({ id: 'iso-side-given', statement: 'AB ≅ AC', involvedObjects: ['segment-ab', 'segment-ac'], relation: 'congruent', justification: 'hypothesis', dependencies: [], interaction: 'complete-justification', prompt: 'Justifique o par de lados que caracteriza o isósceles.', hint: 'Essa informação vem do enunciado.', justificationOptions: ['hypothesis', 'isoscelesTheorem', 'definition'] }),
+      step({ id: 'iso-angle-split', statement: '∠BAD ≅ ∠CAD', involvedObjects: ['angle-bad', 'angle-cad'], relation: 'congruent', justification: 'angleBisector', dependencies: [], interaction: 'complete-justification', prompt: 'Use a função da construção AD.', hint: 'AD divide o ângulo do vértice em dois ângulos congruentes.', justificationOptions: ['angleBisector', 'OPV', 'hypothesis'] }),
+      step({ id: 'iso-shared', statement: 'AD ≅ AD', involvedObjects: ['segment-ad'], relation: 'congruent', justification: 'reflexivity', dependencies: [], interaction: 'complete-justification', prompt: 'Qual propriedade permite usar AD nos dois triângulos?', hint: 'É o mesmo segmento.', justificationOptions: ['reflexivity', 'transitivity', 'hypothesis'] }),
+      step({ id: 'iso-sas', statement: '△ABD ≅ △ACD', involvedObjects: ['triangle-abd', 'triangle-acd'], relation: 'congruent', justification: 'LAL', dependencies: ['iso-side-given', 'iso-angle-split', 'iso-shared'], interaction: 'select-consequence', prompt: 'Qual critério conclui a congruência dos triângulos menores?', hint: 'Lado, ângulo compreendido e lado.', answerOptions: [{ id: 'iso-sas', label: '△ABD ≅ △ACD por LAL' }, { id: 'iso-asa', label: '△ABD ≅ △ACD por ALA' }, { id: 'iso-sss', label: '△ABD ≅ △ACD por LLL' }], expectedAnswerIds: ['iso-sas'] }),
+      step({ id: 'iso-base-result', statement: '∠ABC ≅ ∠BCA', involvedObjects: ['angle-abc', 'angle-bca'], relation: 'congruent', justification: 'correspondingParts', dependencies: ['iso-sas'], interaction: 'select-consequence', prompt: 'Extraia a consequência que prova o teorema.', hint: 'B e C são os vértices correspondentes da base.', answerOptions: [{ id: 'iso-base-result', label: '∠ABC ≅ ∠BCA' }, { id: 'wrong-apex', label: '∠ABC ≅ ∠BAC' }, { id: 'wrong-sides', label: 'AB ≅ BC' }], expectedAnswerIds: ['iso-base-result'] }),
+    ],
+    debrief: 'A bissetriz foi uma construção auxiliar: ela criou dois triângulos LAL e permitiu extrair os ângulos da base por partes correspondentes.',
+    unlockSkillIds: ['isosceles-theorem'],
+  },
+  {
     id: 'isosceles-cevian',
     title: 'A Ceviana de Três Faces',
     subtitle: 'Boss Proof · isósceles, mediana e altura',

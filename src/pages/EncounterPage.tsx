@@ -112,7 +112,8 @@ function EncounterSession({ encounter }: { encounter: Encounter }) {
     );
   }
 
-  const asksForCriterion = knownRelationIds.includes('relation-opv');
+  const asksForCriterion = knownRelationIds.includes('relation-opv') && !knownRelationIds.includes('relation-triangles-sas');
+  const asksForConsequence = knownRelationIds.includes('relation-triangles-sas') && !knownRelationIds.includes('relation-ab-hr');
 
   return (
     <section className="page encounter-page">
@@ -141,7 +142,9 @@ function EncounterSession({ encounter }: { encounter: Encounter }) {
           <aside className="action-workbench">
             <span className="eyebrow">Aplicação matemática</span>
             <h2>
-              {asksForCriterion
+              {asksForConsequence
+                ? 'A congruência está provada. Qual consequência corresponde aos lados externos?'
+                : asksForCriterion
                 ? 'As relações satisfazem um critério. Qual deles permite avançar?'
                 : 'Escolha uma skill e os objetos aos quais ela se aplica.'}
             </h2>

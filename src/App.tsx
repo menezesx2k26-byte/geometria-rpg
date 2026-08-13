@@ -10,6 +10,8 @@ import { MicroquestPage } from './pages/MicroquestPage';
 import { CampaignPage } from './pages/CampaignPage';
 import { AnalyticalCampaignPage } from './pages/AnalyticalCampaignPage';
 import { CoordinateLabPage } from './pages/CoordinateLabPage';
+import { OfficialQuest15Page } from './pages/OfficialQuest15Page';
+import { VerticalSlicePage } from './pages/VerticalSlicePage';
 
 export function App() {
   return (
@@ -30,6 +32,8 @@ export function App() {
         <Route path="campaign/analytical/:regionId" element={<AnalyticalCampaignPage />} />
         <Route path="campaign/analytical/:regionId/:questId" element={<AnalyticalCampaignPage />} />
         <Route path="lab/coordinates" element={<CoordinateLabPage />} />
+        <Route path="encounter/official-q15" element={<OfficialQuest15Page />} />
+        <Route path="vertical-slice" element={<VerticalSlicePage />} />
         <Route path="review" element={<ReviewPage />} />
         <Route path="*" element={<Navigate to="/map" replace />} />
       </Route>

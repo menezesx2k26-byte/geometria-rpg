@@ -22,6 +22,7 @@ export function MapPage() {
           ocultas até que seus pré-requisitos sejam dominados.
         </p>
       </div>
+      <Link className="vertical-slice-cta" to="/vertical-slice"><span>Vertical slice jogável</span><strong>Entrar na Fortaleza da Congruência</strong><ArrowRight /></Link>
 
       <RPGDivider label="Trilhas reveladas" />
 

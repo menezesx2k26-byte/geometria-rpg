@@ -395,6 +395,39 @@ p { color: var(--muted); line-height: 1.65; }
 .coordinate-readout strong { font-family: Georgia, serif; font-size: 1.5rem; }
 .coordinate-readout span, .coordinate-readout small { color: #526064; }
 .coordinate-decision-panel .text-action { display: inline-flex; align-items: center; gap: 5px; margin: 11px 0 0; color: #286278; }
+.vertical-slice-cta { display: flex; flex-wrap: wrap; align-items: center; gap: 7px 12px; width: fit-content; margin: 24px 0; border: 1px solid rgba(170, 120, 219, .48); border-radius: 8px 18px 8px 18px; padding: 12px 15px; background: linear-gradient(135deg, rgba(96, 52, 124, .62), rgba(18, 64, 76, .85)); }
+.vertical-slice-cta span { width: 100%; color: #d4a8f3; font-size: .65rem; font-weight: 850; letter-spacing: .1em; text-transform: uppercase; }
+.vertical-slice-cta svg { color: #d4a8f3; }
+.slice-hero { max-width: 800px; }
+.slice-hero > svg { color: #c795e8; }
+.slice-hero .eyebrow { display: block; margin-top: 12px; }
+.slice-skill-path { display: grid; gap: 8px; margin: 32px 0 100px; }
+.slice-skill { display: grid; grid-template-columns: 46px 1fr; gap: 11px; align-items: center; min-height: 72px; border: 1px solid rgba(170, 120, 219, .3); border-radius: 8px 18px 8px 18px; padding: 10px; background: linear-gradient(135deg, rgba(91, 45, 104, .48), rgba(13, 57, 68, .75)); }
+.slice-skill > span { display: grid; width: 42px; height: 42px; place-items: center; border-radius: 50%; color: #d4a8f3; background: rgba(170, 120, 219, .14); }
+.slice-skill > div { display: grid; grid-template-columns: 1fr auto; gap: 2px 8px; }
+.slice-skill small { grid-column: 1 / -1; color: var(--muted); font-size: .6rem; text-transform: uppercase; }
+.slice-skill strong { font-family: Georgia, serif; }
+.slice-skill em { color: var(--success); font-size: .7rem; font-style: normal; }
+.slice-skill.is-locked { pointer-events: none; filter: grayscale(1); opacity: .5; }
+.slice-missions { display: grid; gap: 11px; }
+.slice-missions article { border: 1px solid rgba(121, 220, 255, .18); border-radius: 8px 18px 8px 18px; padding: 17px; background: rgba(8, 37, 50, .45); }
+.slice-missions h2 { margin: 6px 0; }
+.slice-missions p { font-size: .8rem; }
+.slice-codex-link { display: flex; align-items: center; gap: 11px; width: fit-content; margin: 22px auto; border: 1px solid var(--line); border-radius: 999px; padding: 9px 14px; }
+.slice-codex-link span { display: grid; }
+.slice-codex-link small { color: var(--muted); font-size: .64rem; }
+.official-quest-header { max-width: 800px; margin: 24px 0; }
+.official-quest-header p { max-width: 720px; }
+.official-quest-layout { display: grid; gap: 16px; }
+.official-diagram { overflow: hidden; border: 1px solid rgba(121, 220, 255, .2); border-radius: 12px; background: rgba(7, 31, 42, .55); }
+.official-diagram svg { width: 100%; }
+.official-diagram svg polygon { fill: rgba(62, 142, 208, .08); stroke: #9bcdda; stroke-width: 3; }
+.official-diagram svg line { stroke: #d8ad46; stroke-width: 3; }
+.official-diagram svg text { fill: #f1dfb8; font-family: Georgia, serif; font-size: 24px; font-weight: 900; }
+.official-diagram aside { display: grid; gap: 5px; border-top: 1px solid var(--line); padding: 13px; }
+.official-diagram aside span { color: var(--muted); font-size: .72rem; }
+.official-workbench { border: 1px solid rgba(105, 68, 26, .44); border-radius: 8px 22px 8px 22px; padding: 18px; color: var(--ink); background: var(--parchment); }
+.official-workbench .relation-workspace li { font-size: .76rem; }
 
 @keyframes reveal-glow { from { opacity: 0; transform: translateY(10px) scale(.98); } to { opacity: 1; transform: none; } }
 @media (prefers-reduced-motion: reduce) { *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; animation-iteration-count: 1 !important; transition-duration: .01ms !important; } }
@@ -417,6 +450,9 @@ p { color: var(--muted); line-height: 1.65; }
   .dual-skill-panel { grid-template-columns: 1fr 1fr; }
   .coordinate-lab-layout { grid-template-columns: minmax(0, 1.2fr) minmax(330px, .8fr); align-items: start; }
   .coordinate-decision-panel { position: sticky; top: 88px; }
+  .slice-skill-path { grid-template-columns: repeat(3, 1fr); }
+  .slice-missions { grid-template-columns: repeat(3, 1fr); }
+  .official-quest-layout { grid-template-columns: minmax(0, 1.1fr) minmax(340px, .9fr); align-items: start; }
   .proof-header { grid-template-columns: 44px 1fr auto; }
   .proof-header nav { grid-column: auto; min-width: 220px; }
   .proof-brief { grid-template-columns: 1fr 1fr; }
