@@ -1,6 +1,16 @@
 # Geometria RPG
 
-Uma experiência mobile-first de Geometria Euclidiana em que teoremas são habilidades, exercícios são encounters e provas são desafios de raciocínio. O progresso representa dependências matemáticas reais e permanece no dispositivo via `localStorage`.
+Uma experiência mobile-first de Geometria Euclidiana e Analítica em que teoremas são habilidades, exercícios são encounters e provas são desafios de raciocínio. O progresso representa dependências matemáticas reais e permanece no dispositivo via `localStorage`.
+
+## Rotas jogáveis
+
+- **Fortaleza da Congruência:** correspondência, OPV, LAL, ALA e provas;
+- **Passagem das Paralelas:** famílias angulares, conversas e paralelogramo;
+- **Forja das Retas:** ponto médio, determinante, equação geral, reta como conjunto solução e SPD/SI/SPI;
+- **Modelagem Métrica 48:** figura → pontos auxiliares → retas → sistema → distâncias exatas;
+- **Ponte das Duas Linguagens:** transferência entre argumentos sintéticos e analíticos.
+
+As rotas partem de `/vertical-slice`. Nenhuma delas concede domínio por leitura: somente tentativas matemáticas registradas alteram o perfil do estudante.
 
 ## Desenvolvimento
 
@@ -44,8 +54,8 @@ O release atual foi publicado por Direct Upload com Wrangler e está associado a
 ## Arquitetura
 
 - `src/data`: conteúdo declarativo, sem hardcode nas páginas;
-- `src/engine`: regras puras dos encounters e provas;
+- `src/engine`: regras puras dos encounters, provas, retas, sistemas e distâncias exatas;
 - `src/state`: progresso persistido localmente;
 - `src/components`: interfaces reutilizáveis de geometria, gameplay, prova e navegação;
-- `src/pages`: mapa, campanhas, encounters, Proof Engine, laboratório, Codex, treino e revisão;
+- `src/pages`: mapa, campanhas, encounters, Proof Engine, laboratórios de modelagem, Codex, treino filtrável e revisão adaptativa;
 - `src/types`: modelo do domínio matemático e pedagógico.

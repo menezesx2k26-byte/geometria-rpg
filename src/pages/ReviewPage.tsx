@@ -1,4 +1,5 @@
-import { BrainCircuit, Play, RotateCcw, Target } from 'lucide-react';
+import { BrainCircuit, Clock3, Play, RotateCcw, Target } from 'lucide-react';
+import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { microquests } from '../data/microquests';
 import { skills } from '../data/bootstrap';
@@ -13,8 +14,16 @@ const dimensionLabels: Record<MasteryDimension, string> = {
   transfer: 'Transferência',
 };
 
+function practiceRoute(skillId: string) {
+  if (['parallel-angle-families', 'parallel-converse-skill', 'parallelogram-characterization'].includes(skillId)) return '/lab/parallelism';
+  if (['general-line-equation', 'line-solution-set', 'vertical-horizontal-lines', 'supporting-line', 'linear-system-classification', 'system-intersection-interpretation'].includes(skillId)) return '/lab/line-forge';
+  if (['figure-to-equation', 'exact-distance-proof', 'distance-formula-skill', 'coordinate-proof'].includes(skillId)) return '/lab/exercise-48';
+  return '/training';
+}
+
 export function ReviewPage() {
   const { progress, resetProgress } = useProgress();
+  const [reviewedAt] = useState(Date.now);
   const incorrect = progress.attempts.filter((attempt) => !attempt.correct);
   const practicedProfiles = Object.values(progress.skills).filter((profile) => profile.totalAttempts > 0);
   const dimensionScores = Object.keys(dimensionLabels).map((dimension) => {
@@ -26,6 +35,12 @@ export function ReviewPage() {
     .map((id) => microquests.find((microquest) => microquest.id === id))
     .filter((microquest) => microquest !== undefined);
   const activeErrors = Object.entries(progress.errorTagCounts).filter(([, count]) => (count ?? 0) > 0);
+  const adaptiveQueue = practicedProfiles
+    .filter((profile) => profile.mastery < 80)
+    .sort((left, right) => left.mastery - right.mastery)
+    .slice(0, 4)
+    .map((profile) => ({ profile, skill: skills.find((skill) => skill.id === profile.skillId) }))
+    .filter((item) => item.skill !== undefined);
 
   return (
     <section className="page">
@@ -42,6 +57,16 @@ export function ReviewPage() {
         {dimensionScores.map(({ dimension, score }) => (
           <div className="dimension-row" key={dimension}><span>{dimensionLabels[dimension]}</span><div><i style={{ width: `${score}%` }} /></div><strong>{Math.round(score)}</strong></div>
         ))}
+      </section>
+
+      <section className="adaptive-review-queue">
+        <span className="eyebrow">Fila adaptativa</span>
+        <h2>Próximas recuperações</h2>
+        {adaptiveQueue.length ? <div>{adaptiveQueue.map(({ profile, skill }) => {
+          if (!skill) return null;
+          const days = profile.lastPracticedAt ? Math.floor((reviewedAt - new Date(profile.lastPracticedAt).getTime()) / 86400000) : 0;
+          return <Link key={profile.skillId} to={practiceRoute(profile.skillId)}><span><Clock3 size={15} /> {days > 0 ? `${days}d sem prática` : 'praticado hoje'}</span><strong>{skill.title}</strong><small>{Math.round(profile.mastery)}/100 · retomar pela competência mais fraca</small></Link>;
+        })}</div> : <p>Pratique uma rota para que o diagnóstico organize recuperações por domínio baixo, erro recente e tempo sem prática.</p>}
       </section>
 
       {recommendations.length > 0 && (

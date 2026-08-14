@@ -14,6 +14,10 @@ const AnalyticalCampaignPage = lazy(() => import('./pages/AnalyticalCampaignPage
 const CoordinateLabPage = lazy(() => import('./pages/CoordinateLabPage').then((module) => ({ default: module.CoordinateLabPage })));
 const OfficialQuest15Page = lazy(() => import('./pages/OfficialQuest15Page').then((module) => ({ default: module.OfficialQuest15Page })));
 const VerticalSlicePage = lazy(() => import('./pages/VerticalSlicePage').then((module) => ({ default: module.VerticalSlicePage })));
+const LineForgePage = lazy(() => import('./pages/LineForgePage').then((module) => ({ default: module.LineForgePage })));
+const MetricModelingPage = lazy(() => import('./pages/MetricModelingPage').then((module) => ({ default: module.MetricModelingPage })));
+const ParallelismLabPage = lazy(() => import('./pages/ParallelismLabPage').then((module) => ({ default: module.ParallelismLabPage })));
+const CrossoverPage = lazy(() => import('./pages/CrossoverPage').then((module) => ({ default: module.CrossoverPage })));
 
 function PageLoader() {
   return <div className="page-loader" role="status">Abrindo território…</div>;
@@ -40,6 +44,10 @@ export function App() {
           <Route path="campaign/analytical/:regionId" element={<AnalyticalCampaignPage />} />
           <Route path="campaign/analytical/:regionId/:questId" element={<AnalyticalCampaignPage />} />
           <Route path="lab/coordinates" element={<CoordinateLabPage />} />
+          <Route path="lab/line-forge" element={<LineForgePage />} />
+          <Route path="lab/exercise-48" element={<MetricModelingPage />} />
+          <Route path="lab/parallelism" element={<ParallelismLabPage />} />
+          <Route path="lab/crossover" element={<CrossoverPage />} />
           <Route path="vertical-slice" element={<VerticalSlicePage />} />
           <Route path="review" element={<ReviewPage />} />
           <Route path="*" element={<Navigate to="/map" replace />} />

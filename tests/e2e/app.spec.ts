@@ -12,6 +12,15 @@ async function applyEncounterRule(page: Page, skill: string, objects: string[]) 
   await page.getByRole('button', { name: 'Confirmar aplicação', exact: true }).click();
 }
 
+async function runDecisionJourney(page: Page, route: string, answers: string[]) {
+  await page.goto(route);
+  for (const [index, answer] of answers.entries()) {
+    await page.getByRole('button', { name: answer, exact: true }).click();
+    await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+    await page.getByRole('button', { name: index === answers.length - 1 ? 'Concluir rota' : 'Registrar e avançar', exact: true }).click();
+  }
+}
+
 test('official Q15 requires mathematical choices and returns the official result', async ({ page }) => {
   await resetProgress(page);
   await page.goto('/encounter/official-q15');
@@ -90,18 +99,71 @@ test('coordinate lab requires three geometric point selections', async ({ page }
   await expect(page.getByText(/Você investigou sinais, diagonais e eixos/)).toBeVisible();
 });
 
+test('line forge completes the canonical route through SPD, SI and SPI', async ({ page }) => {
+  await resetProgress(page);
+  await runDecisionJourney(page, '/lab/line-forge', [
+    'M=(−3/2, 1/2)',
+    'det=0; A, B e D são colineares',
+    'x+y+1=0',
+    '(−1,0) e (0,−1)',
+    'x=3 é vertical; y=1 é horizontal',
+    'AB: 3x−y=0 · AC: y=0',
+    'r={(x,y)∈ℝ² : 3x−y=0}',
+    'uma solução → r∩s={(3,1)} → concorrentes',
+    'SI → r∩s=∅ → paralelas distintas',
+    'SPI → infinitas soluções → retas coincidentes',
+    '3x+7y+1=0',
+  ]);
+  await expect(page.getByText('Forjador de Retas')).toBeVisible();
+});
+
+test('exercise 48 requires the full model before the exact metric proof', async ({ page }) => {
+  await resetProgress(page);
+  await runDecisionJourney(page, '/lab/exercise-48', [
+    'O=(0,0), B=(0,2), C=(2,0)',
+    'M=(0,1) e N=(1,0)',
+    'r=↔BN e s=↔MC',
+    'r: 2x+y−2=0 · s: x+2y−2=0',
+    '{ 2x+y−2=0 ; x+2y−2=0 }',
+    'x=y=2/3; P=(2/3,2/3)=r∩s',
+    'PB e PN',
+    'd(P,B)=2√5/3 · d(P,N)=√5/3',
+    'Como 2√5/3=2·(√5/3), então d(P,B)=2d(P,N)',
+  ]);
+  await expect(page.getByText('Modelador Métrico')).toBeVisible();
+});
+
+test('parallelism and crossover routes demand justification and transfer', async ({ page }) => {
+  await resetProgress(page);
+  await runDecisionJourney(page, '/lab/parallelism', [
+    'Alternos internos: α≅β',
+    'x=15',
+    'Pela conversa: r∥s',
+    'Comparar △AMB e △CMD, depois △AMD e △CMB por LAL',
+  ]);
+  await expect(page.getByText('Arquiteto das Paralelas')).toBeVisible();
+  await runDecisionJourney(page, '/lab/crossover', [
+    'Sintética: vértice→ponto médio · Analítica: midpoint + reta por dois pontos',
+    'Solução comum do sistema formado pelas duas equações',
+    'Calcular M_AB e obter a reta por M perpendicular à reta AB',
+  ]);
+  await expect(page.getByText('Tradutor Geométrico')).toBeVisible();
+});
+
 for (const width of [360, 390, 412]) {
   test(`mobile ${width}px has no horizontal overflow and touch targets are usable`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
-    await page.goto('/vertical-slice');
-    const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
-    expect(overflow).toBeLessThanOrEqual(1);
-    const interactiveSizes = await page.locator('button:visible, a:visible').evaluateAll((elements) => elements.map((element) => {
-      const rect = element.getBoundingClientRect();
-      return { width: rect.width, height: rect.height, text: element.textContent?.trim() };
-    }));
-    const tiny = interactiveSizes.filter((item) => item.width < 44 || item.height < 40);
-    expect(tiny).toEqual([]);
+    for (const route of ['/vertical-slice', '/lab/parallelism', '/lab/line-forge', '/lab/exercise-48']) {
+      await page.goto(route);
+      const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+      expect(overflow, route).toBeLessThanOrEqual(1);
+      const interactiveSizes = await page.locator('button:visible, a:visible').evaluateAll((elements) => elements.map((element) => {
+        const rect = element.getBoundingClientRect();
+        return { width: rect.width, height: rect.height, text: element.textContent?.trim() };
+      }));
+      const tiny = interactiveSizes.filter((item) => item.width < 44 || item.height < 40);
+      expect(tiny, route).toEqual([]);
+    }
   });
 }
 
@@ -116,7 +178,7 @@ test('direct route refresh works and RPG assets load', async ({ page, request })
 });
 
 test('critical pages have no serious axe violations', async ({ page }) => {
-  for (const route of ['/map', '/vertical-slice', '/lab/coordinates', '/review']) {
+  for (const route of ['/map', '/vertical-slice', '/lab/coordinates', '/lab/parallelism', '/lab/line-forge', '/lab/exercise-48', '/training', '/review']) {
     await page.goto(route);
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
     const serious = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));

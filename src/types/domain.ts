@@ -75,7 +75,18 @@ export interface GeometryObject {
 
 export interface GeometryRelation {
   id: string;
-  kind: 'congruent' | 'equal' | 'supplementary' | 'opposite-vertical' | 'shared' | 'correspondence';
+  kind:
+    | 'congruent'
+    | 'equal'
+    | 'supplementary'
+    | 'opposite-vertical'
+    | 'shared'
+    | 'correspondence'
+    | 'parallel'
+    | 'perpendicular'
+    | 'collinear'
+    | 'midpoint'
+    | 'point-on-line';
   objectIds: string[];
   notation: string;
   reason?: string;
@@ -163,6 +174,10 @@ export type ProofJustification =
   | 'OPV'
   | 'midpoint'
   | 'angleBisector'
+  | 'parallelCorresponding'
+  | 'alternateInterior'
+  | 'parallelConverse'
+  | 'perpendicular'
   | 'collinearity'
   | 'supplementary'
   | 'complementary'
@@ -171,6 +186,9 @@ export type ProofJustification =
   | 'LLL'
   | 'correspondingParts'
   | 'isoscelesTheorem'
+  | 'parallelogramProperty'
+  | 'distanceFormula'
+  | 'triangleAngleSum'
   | 'transitivity'
   | 'contradiction'
   | 'algebra';
@@ -254,7 +272,28 @@ export type DiagnosticTag =
   | 'distance-formula'
   | 'absolute-value'
   | 'proof-gap'
-  | 'construction-choice';
+  | 'construction-choice'
+  | 'parallel-angle-family'
+  | 'parallel-converse'
+  | 'parallelogram-characterization'
+  | 'collinearity-determinant'
+  | 'line-representation-fluency'
+  | 'general-line-equation'
+  | 'supporting-line-vs-segment'
+  | 'vertical-horizontal-confusion'
+  | 'same-line-different-equation'
+  | 'system-classification-confusion'
+  | 'system-vs-intersection'
+  | 'midpoint-formula-error'
+  | 'wrong-point-read-from-axis'
+  | 'chooses-wrong-line'
+  | 'wrong-line-equation'
+  | 'fails-to-build-system'
+  | 'linear-system-error'
+  | 'solves-system-but-cannot-interpret'
+  | 'radical-simplification'
+  | 'exact-vs-decimal'
+  | 'metric-proof-gap';
 
 export interface Attempt {
   encounterId: string;

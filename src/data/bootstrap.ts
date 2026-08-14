@@ -29,6 +29,7 @@ function campaignSkill(
   prerequisites: string[],
   tags: string[],
 ): SkillSeed {
+  const analyticalRegion = ['cartesian-plane', 'distances', 'centers', 'analytic-proofs', 'line-forge'].includes(regionId);
   return {
     id,
     title,
@@ -41,7 +42,10 @@ function campaignSkill(
     tags,
     assetKey: regionId === 'angle-temple' ? 'angles-core' : regionId === 'cevians-sanctuary' ? 'cevians-core' : 'congruence-cases',
     codexEntryId: `codex-${id}`,
-    sourceRefs: [{ origin: 'Lista Euclidiana', reference: 'Campanha Euclidiana · Lista 1' }],
+    sourceRefs: [{
+      origin: analyticalRegion ? 'Lista Analítica' : 'Lista Euclidiana',
+      reference: analyticalRegion ? 'Campanha Analítica · Listas 1 e 2' : 'Campanha Euclidiana · Listas 1 e 2',
+    }],
     visibility: 'hiddenUntilDiscovered',
   };
 }
@@ -321,6 +325,9 @@ const skillSeeds: SkillSeed[] = [
   campaignSkill('straight-angle', 'Ângulo raso', 'definition', 'angle-temple', 'Ângulo raso é o ângulo de medida 180°.', ['angles'], ['ângulo', '180 graus']),
   campaignSkill('adjacent-angles', 'Ângulos adjacentes', 'definition', 'angle-temple', 'Ângulos adjacentes compartilham vértice e um lado, sem sobreposição interior.', ['angles'], ['ângulo', 'adjacência']),
   campaignSkill('angle-algebra', 'Linguagem algébrica angular', 'algebra', 'angle-temple', 'Relações angulares podem ser traduzidas em equações preservando suas justificativas geométricas.', ['complementary-angles', 'supplementary-angles'], ['ângulo', 'álgebra']),
+  campaignSkill('parallel-angle-families', 'Ângulos em paralelas', 'theorem', 'parallel-pass', 'Retas paralelas cortadas por uma transversal determinam pares correspondentes e alternos congruentes e pares colaterais suplementares.', ['angles'], ['paralelismo', 'transversal', 'ângulos']),
+  campaignSkill('parallel-converse-skill', 'Conversas de paralelismo', 'theorem', 'parallel-pass', 'A ocorrência das relações angulares adequadas permite concluir que duas retas são paralelas.', ['parallel-angle-families'], ['paralelismo', 'conversa', 'prova']),
+  campaignSkill('parallelogram-characterization', 'Caracterização por diagonais', 'theorem', 'quadrilaterals-city', 'Um quadrilátero é paralelogramo se e somente se suas diagonais se cortam nos respectivos pontos médios.', ['parallel-converse-skill', 'midpoint', 'sas'], ['paralelogramo', 'diagonais', 'ponto médio']),
   campaignSkill('equilateral-triangle', 'Triângulo equilátero', 'definition', 'triangles', 'Triângulo equilátero possui três lados congruentes.', ['triangles'], ['triângulo', 'equilátero']),
   campaignSkill('scalene-triangle', 'Triângulo escaleno', 'definition', 'triangles', 'Triângulo escaleno não possui lados congruentes entre si.', ['triangles'], ['triângulo', 'escaleno']),
   campaignSkill('triangle-perimeter', 'Perímetro triangular', 'algebra', 'triangles', 'O perímetro de um triângulo é a soma das medidas de seus três lados.', ['triangles', 'segments'], ['triângulo', 'perímetro']),
@@ -357,6 +364,14 @@ const skillSeeds: SkillSeed[] = [
   campaignSkill('central-symmetry', 'Simetria central', 'technique', 'symmetries', 'A simetria central em um ponto envia cada ponto ao oposto em relação ao centro.', ['coordinate-midpoint'], ['simetria', 'origem']),
   campaignSkill('symmetry-composition', 'Composição de simetrias', 'technique', 'symmetries', 'Compor reflexões pode produzir rotação, translação ou simetria central.', ['axis-reflection', 'central-symmetry'], ['simetria', 'composição']),
   campaignSkill('coordinate-collinearity', 'Colinearidade coordenada', 'algebra', 'analytic-proofs', 'Três pontos são colineares quando satisfazem uma mesma relação linear, equivalentes por determinante ou inclinação compatível.', ['cartesian-coordinates'], ['colinearidade', 'reta']),
+  campaignSkill('general-line-equation', 'Equação geral da reta', 'algebra', 'line-forge', 'A colinearidade entre dois pontos dados e P=(x,y) produz uma equação ax+by+c=0, com (a,b)≠(0,0).', ['coordinate-collinearity'], ['reta', 'equação geral', 'modelagem']),
+  campaignSkill('line-solution-set', 'Reta como conjunto solução', 'definition', 'line-forge', 'A reta ax+by+c=0 é o conjunto dos pares (x,y) que satisfazem simultaneamente essa relação.', ['general-line-equation'], ['reta', 'conjunto solução', 'pertencimento']),
+  campaignSkill('vertical-horizontal-lines', 'Retas verticais e horizontais', 'property', 'line-forge', 'x=k representa uma reta vertical e y=k representa uma reta horizontal, sem exigir coeficiente angular.', ['line-solution-set'], ['reta vertical', 'reta horizontal']),
+  campaignSkill('supporting-line', 'Reta suporte', 'definition', 'line-forge', 'A reta suporte de um segmento contém suas extremidades e se prolonga indefinidamente nas duas direções.', ['general-line-equation', 'segments'], ['reta suporte', 'segmento']),
+  campaignSkill('linear-system-classification', 'Classificação SPD, SI e SPI', 'algebra', 'line-forge', 'Duas equações lineares formam um sistema possível determinado, impossível ou possível indeterminado conforme tenham uma, nenhuma ou infinitas soluções.', ['line-solution-set'], ['sistema', 'SPD', 'SI', 'SPI']),
+  campaignSkill('system-intersection-interpretation', 'Sistema e interseção', 'theorem', 'line-forge', 'As soluções comuns de duas equações são exatamente os pontos da interseção das retas que elas representam.', ['linear-system-classification'], ['sistema', 'interseção', 'posição relativa']),
+  campaignSkill('figure-to-equation', 'Modelagem figura→equação', 'technique', 'line-forge', 'Uma figura é modelada identificando dados, pontos auxiliares e retas relevantes antes de escrever equações.', ['coordinate-midpoint', 'general-line-equation'], ['modelagem', 'figura', 'reta']),
+  campaignSkill('exact-distance-proof', 'Prova métrica exata', 'technique', 'analytic-proofs', 'Distâncias por coordenadas devem permanecer exatas quando a tese exige uma igualdade, preservando radicais simplificados.', ['distance-formula-skill', 'figure-to-equation'], ['distância', 'radicais', 'prova']),
   campaignSkill('line-intersection', 'Interseção de retas e funções', 'algebra', 'analytic-proofs', 'Pontos de interseção satisfazem simultaneamente as equações das curvas.', ['coordinate-collinearity'], ['interseção', 'sistema']),
   campaignSkill('square-coordinate-properties', 'Quadrado por coordenadas', 'theorem', 'analytic-proofs', 'Distâncias, perpendicularidade e pontos médios caracterizam um quadrado no plano.', ['squared-distance', 'coordinate-midpoint'], ['quadrado', 'coordenadas']),
   campaignSkill('squared-distance-optimization', 'Otimização métrica quadrática', 'algebra', 'analytic-proofs', 'Somas de distâncias ao quadrado podem ser expandidas e completadas em quadrados em torno do baricentro.', ['squared-distance', 'centroid-coordinate'], ['otimização', 'quadrados']),
@@ -382,6 +397,8 @@ export const skills: Skill[] = skillSeeds.map((seed) => ({
 export const regions: Region[] = [
   ['foundations', 'Fundamentos', 'A linguagem antes da prova', ['segments', 'midpoint']],
   ['angle-temple', 'Templo dos Ângulos', 'Relações que não dependem da medida', ['angles', 'complementary-angles', 'supplementary-angles', 'opv', 'angle-bisector']],
+  ['parallel-pass', 'Passagem das Paralelas', 'Famílias angulares e suas conversas', ['parallel-angle-families', 'parallel-converse-skill']],
+  ['quadrilaterals-city', 'Cidade dos Quadriláteros', 'Diagonais que revelam paralelogramos', ['parallelogram-characterization']],
   ['triangles', 'Triângulos', 'Correspondências começam nos vértices', ['triangles']],
   ['congruence-fortress', 'Fortaleza da Congruência', 'Cada igualdade precisa de fundamento', ['triangle-congruence', 'sas', 'isosceles-theorem', 'asa', 'isosceles-converse', 'sss']],
   ['cevians-sanctuary', 'Santuário das Cevianas', 'Uma construção, várias consequências', ['median', 'altitude', 'cevians', 'isosceles-special-cevian']],
@@ -391,6 +408,7 @@ export const regions: Region[] = [
   ['symmetries', 'Simetrias', 'Invariantes sob transformações', []],
   ['centers', 'Centros e Pontos Notáveis', 'Encontros inevitáveis de cevianas', []],
   ['analytic-proofs', 'Provas Analíticas', 'Argumentos geométricos em linguagem algébrica', []],
+  ['line-forge', 'Forja das Retas', 'Da figura ao sistema, sem começar por slope', ['general-line-equation', 'line-solution-set', 'vertical-horizontal-lines', 'supporting-line', 'linear-system-classification', 'system-intersection-interpretation', 'figure-to-equation']],
 ].map(([id, title, subtitle, skillIds], index) => ({
   id: id as string,
   title: title as string,

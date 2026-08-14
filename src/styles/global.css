@@ -466,3 +466,128 @@ p { color: var(--muted); line-height: 1.65; }
   .proof-layout { grid-template-columns: minmax(230px, .62fr) minmax(0, 1.38fr); align-items: start; }
   .proof-builder-grid { grid-template-columns: repeat(3, 1fr); }
 }
+
+/* V6 · jornadas de decisão e modelagem */
+.journey-route-grid { display: grid; gap: 11px; margin: 30px 0 54px; }
+.journey-route-card {
+  display: grid;
+  grid-template-columns: 44px minmax(0, 1fr);
+  gap: 3px 12px;
+  min-height: 112px;
+  align-content: center;
+  border: 1px solid rgba(121, 220, 255, .25);
+  border-left: 4px solid var(--accent);
+  border-radius: 8px 20px 20px 8px;
+  padding: 15px;
+  background: linear-gradient(120deg, rgba(62, 142, 208, .16), rgba(12, 47, 60, .88));
+}
+.journey-route-card > svg { grid-row: 1 / 4; align-self: center; color: var(--accent); }
+.journey-route-card small { color: var(--accent); font-size: .62rem; font-weight: 900; letter-spacing: .1em; }
+.journey-route-card strong { font-family: Georgia, serif; font-size: 1.08rem; }
+.journey-route-card span { color: var(--muted); font-size: .72rem; }
+.journey-route-card.is-current { border-left-color: #c084fc; background: linear-gradient(120deg, rgba(130, 87, 167, .24), rgba(12, 47, 60, .88)); }
+.journey-route-card.is-current > svg, .journey-route-card.is-current small { color: #d2a5f4; }
+.journey-route-card.is-boss { border-left-color: var(--gold); background: linear-gradient(120deg, rgba(215, 169, 58, .2), rgba(12, 47, 60, .88)); }
+.journey-route-card.is-boss > svg, .journey-route-card.is-boss small { color: #f0c86c; }
+.slice-section-heading { margin-top: 20px; scroll-margin-top: 90px; }
+.slice-section-heading h2 { margin: 6px 0; font-size: clamp(1.8rem, 7vw, 3.4rem); }
+.slice-section-heading p { margin-bottom: 0; }
+
+.journey-page .back-link { display: inline-flex; min-height: 44px; align-items: center; gap: 6px; }
+.journey-heading { max-width: 830px; margin: 18px 0 28px; }
+.journey-heading h1 { max-width: 760px; }
+.journey-heading p { max-width: 760px; }
+.journey-progress { height: 8px; overflow: hidden; border-radius: 99px; background: rgba(255, 255, 255, .1); }
+.journey-progress > span { display: block; height: 100%; border-radius: inherit; background: linear-gradient(90deg, var(--blue), var(--success), var(--gold)); transition: width .25s ease; }
+.journey-layout { display: grid; gap: 16px; }
+.journey-visual-column { display: grid; gap: 12px; min-width: 0; }
+.journey-diagram { overflow: hidden; margin: 0; border: 1px solid rgba(121, 220, 255, .28); border-radius: 14px 6px 14px 6px; color: var(--ink); background: #ead9b4; box-shadow: 0 18px 42px rgba(0, 0, 0, .2); }
+.journey-diagram svg { display: block; width: 100%; min-height: 300px; }
+.journey-diagram svg defs + rect, .journey-diagram svg > rect { fill: rgba(255,255,255,.12); }
+.journey-diagram svg pattern path { fill: none; stroke: rgba(31, 74, 82, .11); stroke-width: 1; }
+.journey-diagram svg .axis { stroke: rgba(24, 59, 67, .62); stroke-width: 2; }
+.journey-diagram svg text { fill: #153b49; font-family: Georgia, serif; font-size: 18px; font-weight: 900; }
+.journey-diagram svg polygon { fill: rgba(62, 142, 208, .07); stroke: #174355; stroke-width: 3; }
+.journey-diagram figcaption { min-height: 54px; border-top: 1px solid rgba(60, 77, 67, .2); padding: 11px 13px; color: #485e60; background: rgba(255, 255, 255, .28); font-size: .72rem; line-height: 1.5; }
+.model-line { fill: none; stroke-width: 4; stroke-linecap: round; }
+.model-line--r { stroke: #397fb2; }
+.model-line--s { stroke: #b64f63; }
+.model-line--gold { stroke: #aa7723; }
+.model-point { fill: #173e50; stroke: #f7eac9; stroke-width: 3; }
+.model-point.is-focus { fill: #b74e59; }
+.model-point.is-intersection { fill: #267f60; stroke-width: 4; }
+.metric-segment { stroke: #267f60; stroke-width: 6; stroke-dasharray: 7 5; }
+.metric-segment--double { stroke: #a46522; }
+.parallel-base { stroke: #245a70; stroke-width: 6; }
+.transversal { stroke: #a46522; stroke-width: 5; }
+.angle-arc { fill: none; stroke: #b64f63; stroke-width: 7; }
+.tick { fill: none; stroke: #b64f63; stroke-width: 5; }
+.relation-ledger { border: 1px solid rgba(121, 220, 255, .2); border-radius: 8px 18px 8px 18px; padding: 15px; background: rgba(12, 48, 61, .8); }
+.relation-ledger > small { color: var(--accent); font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.relation-ledger p { margin: 8px 0 0; font-size: .76rem; }
+.relation-ledger ol, .journey-complete-grid ol { display: grid; gap: 7px; margin: 11px 0 0; padding: 0; list-style: none; }
+.relation-ledger li, .journey-complete-grid li { display: flex; gap: 7px; align-items: flex-start; color: #dbe9e4; font-size: .76rem; }
+.relation-ledger li svg, .journey-complete-grid li svg { flex: 0 0 auto; color: var(--success); }
+.journey-decision-panel { border: 1px solid rgba(105, 68, 26, .46); border-radius: 8px 22px 8px 22px; padding: 19px; color: var(--ink); background: repeating-linear-gradient(10deg, rgba(97, 62, 24, .025) 0 1px, transparent 1px 6px), var(--parchment); box-shadow: 0 18px 45px rgba(0,0,0,.2); }
+.journey-decision-panel .eyebrow { color: #286278; }
+.journey-decision-panel h2 { margin: 7px 0 10px; font-size: 1.28rem; line-height: 1.25; }
+.journey-decision-panel > p { color: #566465; font-size: .8rem; line-height: 1.5; }
+.journey-options { display: grid; gap: 8px; margin: 17px 0; }
+.journey-options button { min-height: 52px; border: 1px solid rgba(49, 79, 83, .26); border-radius: 8px; padding: 10px 12px; color: var(--ink); background: rgba(255,255,255,.38); font-weight: 800; line-height: 1.35; text-align: left; cursor: pointer; }
+.journey-options button.is-selected { border-color: #267a9c; background: rgba(62, 142, 208, .14); box-shadow: inset 4px 0 #267a9c; }
+.journey-options button:disabled { cursor: default; }
+.journey-hint { display: flex; gap: 8px; align-items: flex-start; margin-bottom: 12px; border: 1px solid rgba(170, 119, 35, .3); border-radius: 8px; padding: 11px; color: #65501f; background: rgba(215, 169, 58, .12); font-size: .78rem; }
+.journey-hint svg { flex: 0 0 auto; }
+.journey-actions { display: flex; flex-wrap: wrap; justify-content: space-between; gap: 9px; align-items: center; }
+.journey-actions .text-action { display: inline-flex; min-height: 44px; align-items: center; gap: 5px; margin: 0; color: #286278; }
+.journey-actions .text-action:disabled { opacity: .42; }
+.journey-complete-grid { display: grid; gap: 24px; margin-top: 30px; }
+.journey-complete-grid h1 { font-size: clamp(2rem, 7vw, 4rem); }
+.journey-complete-grid li { color: var(--text); }
+.journey-complete-grid .completion-actions { justify-content: flex-start; align-self: end; }
+.crossover-diagram { display: grid; grid-template-columns: 1fr; gap: 10px; align-items: center; padding: 24px; color: var(--text); background: linear-gradient(145deg, rgba(28,81,96,.92), rgba(77,48,94,.88)); }
+.language-card { display: grid; min-height: 130px; place-content: center; justify-items: center; gap: 7px; border: 1px solid rgba(255,255,255,.18); border-radius: 8px 20px 8px 20px; padding: 18px; text-align: center; background: rgba(7,27,38,.38); }
+.language-card svg { color: var(--accent); }
+.language-card small { color: var(--muted); font-size: .62rem; font-weight: 900; letter-spacing: .1em; }
+.language-card strong { font-family: Georgia, serif; }
+.language-bridge { justify-self: center; color: var(--gold); }
+.crossover-diagram figcaption { margin: 0 -24px -24px; color: #dce8e7; background: rgba(7,27,38,.38); text-align: center; }
+
+/* V6 · Codex, treino e revisão adaptativa */
+.codex-section { margin-top: 22px; }
+.codex-section > small, .codex-practice small { color: #286278; font-size: .64rem; font-weight: 900; letter-spacing: .11em; }
+.codex-section blockquote { margin-top: 8px; }
+.codex-section p { margin: 7px 0 0; color: #4f6061; font-size: .82rem; }
+.codex-reference-grid { display: grid; gap: 4px 18px; }
+.codex-practice { display: grid; grid-template-columns: auto 1fr; gap: 11px; margin-top: 28px; border-top: 1px solid rgba(49,79,83,.18); padding-top: 18px; color: #286278; }
+.codex-practice > div { display: grid; gap: 8px; }
+.codex-practice a { display: flex; min-height: 44px; align-items: center; justify-content: space-between; gap: 8px; border-radius: 7px; padding: 0 11px; color: #234e5b; background: rgba(42,87,96,.08); font-weight: 800; }
+.training-filters { display: grid; gap: 12px; margin: 26px 0; border: 1px solid rgba(121,220,255,.22); border-radius: 9px 22px 9px 22px; padding: 14px; background: rgba(12,48,61,.78); }
+.training-filters header { display: flex; align-items: center; gap: 8px; }
+.training-filters header svg { color: var(--accent); }
+.training-filters header span { margin-left: auto; color: var(--muted); font-size: .7rem; }
+.training-filters > div { display: flex; flex-wrap: wrap; gap: 6px; }
+.training-filters small { width: 100%; color: var(--muted); font-size: .62rem; font-weight: 900; letter-spacing: .09em; text-transform: uppercase; }
+.training-filters button { min-height: 42px; border: 1px solid var(--line); border-radius: 999px; padding: 0 12px; color: var(--muted); background: rgba(255,255,255,.04); cursor: pointer; }
+.training-filters button.is-active { border-color: var(--accent); color: var(--text); background: rgba(62,142,208,.22); }
+.training-filters label { display: inline-flex; width: fit-content; min-height: 44px; align-items: center; gap: 8px; color: var(--muted); font-weight: 800; }
+.training-filters input { width: 20px; height: 20px; accent-color: var(--blue); }
+.training-skill { display: block; width: fit-content; margin: -4px 0 16px; border-radius: 999px; padding: 5px 9px; color: var(--success); background: rgba(113,211,156,.09); font-size: .68rem; font-weight: 800; }
+.adaptive-review-queue { margin: 26px 0; }
+.adaptive-review-queue h2 { margin: 6px 0 13px; }
+.adaptive-review-queue > div { display: grid; gap: 8px; }
+.adaptive-review-queue a { display: grid; gap: 4px; min-height: 86px; border: 1px solid rgba(121,220,255,.22); border-radius: 8px 18px 8px 18px; padding: 13px; background: rgba(12,48,61,.78); }
+.adaptive-review-queue a > span { display: inline-flex; align-items: center; gap: 5px; color: var(--accent); font-size: .67rem; }
+.adaptive-review-queue a small { color: var(--muted); }
+
+@media (min-width: 760px) {
+  .journey-route-grid { grid-template-columns: repeat(2, 1fr); }
+  .journey-layout { grid-template-columns: minmax(0, 1.16fr) minmax(350px, .84fr); align-items: start; }
+  .journey-decision-panel { position: sticky; top: 88px; }
+  .journey-complete-grid { grid-template-columns: 1fr auto; }
+  .crossover-diagram { grid-template-columns: 1fr auto 1fr; min-height: 420px; }
+  .crossover-diagram figcaption { grid-column: 1 / -1; }
+  .codex-reference-grid { grid-template-columns: repeat(2, 1fr); }
+  .training-filters { grid-template-columns: repeat(3, 1fr); }
+  .training-filters header, .training-filters label { grid-column: 1 / -1; }
+}
