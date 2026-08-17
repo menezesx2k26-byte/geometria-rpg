@@ -323,8 +323,109 @@ export interface MasteryProfile {
   lastPracticedAt?: string;
 }
 
+export type CampaignNodeType = 'lesson' | 'practice' | 'review' | 'challenge' | 'application' | 'checkpoint' | 'boss';
+export type CampaignNodeState = 'locked' | 'current' | 'available' | 'completed' | 'perfect';
+
+export interface CampaignNodeReward {
+  xp: number;
+  achievementId?: string;
+  unlockTitle?: string;
+}
+
+export interface CampaignNode {
+  id: string;
+  chapterId: string;
+  order: number;
+  title: string;
+  subtitle: string;
+  narrativeLabel: string;
+  type: CampaignNodeType;
+  route: string;
+  completionId: string;
+  prerequisites: string[];
+  concepts: string[];
+  reward: CampaignNodeReward;
+}
+
+export interface CampaignChapter {
+  id: string;
+  order: number;
+  title: string;
+  subtitle: string;
+  description: string;
+  accent: string;
+  nodeIds: string[];
+}
+
+export interface MissionProgress {
+  missionId: string;
+  bestStars: 0 | 1 | 2 | 3;
+  completions: number;
+  completedAt?: string;
+  lastPlayedAt?: string;
+}
+
+export interface PlayerStreak {
+  current: number;
+  best: number;
+  lastActivityDate?: string;
+}
+
+export interface QuestProgress {
+  questId: string;
+  value: number;
+  target: number;
+  completed: boolean;
+  rewardedAt?: string;
+}
+
+export interface AchievementProgress {
+  achievementId: string;
+  unlockedAt: string;
+}
+
+export interface ReviewSchedule {
+  conceptId: string;
+  consecutiveCorrect: number;
+  recentErrors: number;
+  intervalDays: number;
+  lastSeen: string;
+  nextReview: string;
+}
+
+export type GameAnalyticsEventType =
+  | 'lesson_step_answered'
+  | 'hint_used'
+  | 'mission_completed'
+  | 'boss_completed'
+  | 'concept_mastery_changed'
+  | 'quest_completed';
+
+export interface GameAnalyticsEvent {
+  id: string;
+  type: GameAnalyticsEventType;
+  occurredAt: string;
+  missionId?: string;
+  stepId?: string;
+  conceptIds?: string[];
+  correct?: boolean;
+  value?: number;
+}
+
+export interface MissionRewardSummary {
+  missionId: string;
+  completionId: string;
+  xp: number;
+  bonusXp: number;
+  stars: 1 | 2 | 3;
+  conceptLabel: string;
+  questCompleted?: string;
+  achievementUnlocked?: string;
+  nextMissionTitle?: string;
+}
+
 export interface UserProgress {
-  version: 2;
+  version: 3;
   skills: Record<string, MasteryProfile>;
   attempts: Attempt[];
   completedEncounterIds: string[];
@@ -335,6 +436,15 @@ export interface UserProgress {
   lastPosition: string;
   recommendedMicroquestIds: string[];
   completedMicroquestIds: string[];
+  xp: number;
+  level: number;
+  missionProgress: Record<string, MissionProgress>;
+  streak: PlayerStreak;
+  quests: Record<string, QuestProgress>;
+  achievements: AchievementProgress[];
+  reviewSchedule: Record<string, ReviewSchedule>;
+  analyticsEvents: GameAnalyticsEvent[];
+  lastMissionReward?: MissionRewardSummary;
 }
 
 export interface MicroquestOption {

@@ -1,16 +1,16 @@
 # Geometria RPG
 
-Uma experiência mobile-first de Geometria Euclidiana e Analítica em que teoremas são habilidades, exercícios são encounters e provas são desafios de raciocínio. O progresso representa dependências matemáticas reais e permanece no dispositivo via `localStorage`.
+Uma experiência mobile-first de Geometria Euclidiana e Analítica organizada em um caminho único. Cada missão ensina, pede uma decisão matemática, oferece feedback, entrega XP/estrelas e desbloqueia a próxima etapa. O progresso permanece no dispositivo via `localStorage`.
 
-## Rotas jogáveis
+## Jornada principal
 
-- **Fortaleza da Congruência:** correspondência, OPV, LAL, ALA e provas;
+- **Ala da Congruência:** mini lesson de correspondência, OPV, LAL, ALA, checkpoint e Boss Proof;
 - **Passagem das Paralelas:** famílias angulares, conversas e paralelogramo;
-- **Forja das Retas:** ponto médio, determinante, equação geral, reta como conjunto solução e SPD/SI/SPI;
-- **Modelagem Métrica 48:** figura → pontos auxiliares → retas → sistema → distâncias exatas;
-- **Ponte das Duas Linguagens:** transferência entre argumentos sintéticos e analíticos.
+- **Forja Analítica:** plano cartesiano, equações gerais, SPD/SI/SPI, crossover e modelagem métrica.
 
-As rotas partem de `/vertical-slice`. Nenhuma delas concede domínio por leitura: somente tentativas matemáticas registradas alteram o perfil do estudante.
+O ponto de entrada é `/map`. A navegação principal foi reduzida a **Caminho**, **Perfil** e **Conquistas**; Codex, treino, revisão, campanhas e as expedições anteriores continuam preservados na Biblioteca da Academia, dentro do Perfil.
+
+Nenhuma rota concede domínio por leitura. Somente tentativas matemáticas registradas alteram o perfil. A progressão V3 inclui XP, nível, estrelas, sequência por dias, quests curtas, conquistas, revisão espaçada e migração automática dos dados V1/V2.
 
 ## Desenvolvimento
 

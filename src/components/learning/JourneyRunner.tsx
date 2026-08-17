@@ -4,6 +4,7 @@ import { Link } from 'react-router-dom';
 import type { JourneyStage } from '../../data/interactiveJourneys';
 import { useProgress } from '../../state/progress';
 import { FeedbackPanel, UnlockBanner } from '../rpg';
+import { MissionRewardCard } from '../campaign/MissionRewardCard';
 
 interface JourneyRunnerProps {
   journeyId: string;
@@ -83,6 +84,7 @@ export function JourneyRunner({
     return (
       <section className="page journey-page journey-complete-page">
         <UnlockBanner title={completionTitle}>{completionText}</UnlockBanner>
+        <MissionRewardCard completionId={journeyId} />
         <div className="journey-complete-grid">
           <section>
             <span className="eyebrow">Cadeia reconstruída</span>

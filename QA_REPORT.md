@@ -1,6 +1,6 @@
 # Relatório de aceite
 
-Data: 14 de agosto de 2026
+Data: 17 de agosto de 2026
 
 ## Aplicação
 
@@ -8,18 +8,35 @@ Data: 14 de agosto de 2026
 | --- | --- | --- |
 | Build e TypeScript estrito | PASSOU | `npm run build` executa `tsc -b` e o build de produção do Vite. |
 | Lint | PASSOU | `npm run lint`. |
-| Testes unitários | PASSOU | 16 testes Vitest cobrem conteúdo, encounters, Proof Engine e engine analítica. |
-| Chromium real | PASSOU | 15 testes Playwright cobrem nove experiências matemáticas, persistência, domínio, mobile, rotas, assets e acessibilidade. |
+| Testes unitários | PASSOU | 20 testes Vitest cobrem conteúdo, encounters, Proof Engine, engine analítica, migração V3, recompensas e revisão espaçada. |
+| Chromium real | PASSOU | 17 testes Playwright cobrem as experiências matemáticas anteriores e o novo caminho completo, persistência, domínio, mobile, rotas, assets e acessibilidade. |
 | Matemática | PASSOU | Além da trilha euclidiana anterior, foram validados determinante de colinearidade, equação geral, retas equivalentes, verticais/horizontais, SPD/SI/SPI e o exercício 48 com radicais exatos. |
 | Gameplay ativo | PASSOU | Congruência, paralelismo, Forja das Retas, modelagem métrica, crossover e plano cartesiano exigem decisões registradas; não há domínio por leitura. |
 | Proof Engine | PASSOU | Aceita passo correto e ordem equivalente de premissas independentes; rejeita ordem causal inválida, salto lógico, justificativa errada e construção inútil. |
 | Mastery | PASSOU | Abrir páginas não cria tentativa nem domínio; erros repetidos mantêm domínio em zero e geram microquest. |
 | Persistência | PASSOU | Progresso, erros e microquest recomendada sobrevivem a reload por `localStorage`. |
-| Mobile | PASSOU | Sem overflow horizontal em 360, 390 e 412 px nas quatro rotas de maior densidade; alvos interativos auditados. |
-| Acessibilidade | PASSOU | Sem violações axe sérias/críticas em oito rotas críticas; labels, foco, contraste, redução de movimento e toque verificados. |
+| Migração V3 | PASSOU | Dados V1/V2 são preservados e convertidos para XP, nível e missões concluídas sem apagar tentativas ou mastery. |
+| Loop de recompensa | PASSOU | Missão → feedback → XP/estrelas → quest/conquista → próxima missão foi validado em Chromium. |
+| Revisão espaçada | PASSOU | Histórico por conceito calcula intervalo e prioriza microquest vencida sem alterar a ordem da campanha. |
+| Mobile | PASSOU | Sem overflow horizontal em 360, 390 e 412 px no caminho, mini lesson, perfil, conquistas e laboratório denso; alvos interativos auditados. |
+| Acessibilidade | PASSOU | Sem violações axe sérias/críticas em dez rotas críticas; labels, foco, contraste, redução de movimento e toque verificados. |
 | Performance | PASSOU | Rotas são carregadas sob demanda; cartelas originais não são renderizadas globalmente. |
 | Links e ações | PASSOU | Links falsos de conteúdo bloqueado foram removidos e não há botões de avanço sem decisão nos fluxos jogáveis. |
 | Loop de 10 minutos | PASSOU | A Forja exige 11 decisões e o exercício 48 exige 9 fases encadeadas; não podem ser vencidos por “next/show”. |
+
+## Aceite V2 · gamificação e caminho único
+
+| Critério | Resultado |
+| --- | --- |
+| Preservar funcionalidades existentes | PASSOU — engines, conteúdo, SVGs, Codex, treino, revisão, campanhas e labs permanecem acessíveis. |
+| Navegação principal em três destinos | PASSOU — Caminho, Perfil e Conquistas. |
+| Primeira missão ensina antes de avaliar | PASSOU — 8 etapas: contexto, A↔D modelado, B↔E, C↔F, AB↔DE, ∠C↔∠F, formalização e desafio. |
+| Caminho bloqueado por pré-requisitos | PASSOU — 11 nós em 3 capítulos, com estados bloqueado, atual, disponível, concluído e perfeito. |
+| XP, estrelas, nível e sequência | PASSOU — recompensas locais, repetição com XP reduzido e sequência apenas por conclusão significativa. |
+| Quests e conquistas sem dark patterns | PASSOU — objetivos finitos, sem compras, ranking, punição ou notificações coercivas. |
+| Checkpoints e bosses | PASSOU — prova do isósceles, Guardião das Cevianas e boss analítico. |
+| Analytics locais | PASSOU — eventos pedagógicos limitados a 250 registros; nenhum dado sai do navegador. |
+| Inspeção visual real | PASSOU — desktop e mobile 390×844 inspecionados no navegador, sem overflow ou erros de console. |
 
 ## Casos canônicos da engine analítica
 

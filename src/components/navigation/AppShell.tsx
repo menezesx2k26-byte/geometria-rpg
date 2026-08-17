@@ -1,25 +1,25 @@
-import { BookOpen, Dumbbell, Map, RotateCcw, Scroll } from 'lucide-react';
+import { Award, Map, UserRound } from 'lucide-react';
 import { NavLink, Outlet } from 'react-router-dom';
 import { RPGHeader } from '../rpg';
+import { useProgress } from '../../state/progress';
 
 const navItems = [
-  { to: '/map', label: 'Mapa', icon: Map },
-  { to: '/campaign/euclidean', label: 'Campanha', icon: Scroll },
-  { to: '/training', label: 'Treino', icon: Dumbbell },
-  { to: '/codex', label: 'Codex', icon: BookOpen },
-  { to: '/review', label: 'Revisão', icon: RotateCcw },
+  { to: '/map', label: 'Caminho', icon: Map },
+  { to: '/profile', label: 'Perfil', icon: UserRound },
+  { to: '/achievements', label: 'Conquistas', icon: Award },
 ];
 
 export function AppShell() {
+  const { progress } = useProgress();
   return (
     <div className="app-shell">
-      <RPGHeader />
+      <RPGHeader>Nv. {progress.level} · {progress.xp} XP</RPGHeader>
 
       <main className="main-content">
         <Outlet />
       </main>
 
-      <nav className="bottom-nav bottom-nav--five" aria-label="Navegação principal">
+      <nav className="bottom-nav bottom-nav--three" aria-label="Navegação principal">
         {navItems.map(({ to, label, icon: Icon }) => (
           <NavLink key={to} to={to} className={({ isActive }) => (isActive ? 'is-active' : '')}>
             <Icon size={19} />

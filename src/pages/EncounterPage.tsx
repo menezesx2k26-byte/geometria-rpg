@@ -2,6 +2,7 @@ import { ArrowLeft, Lightbulb, Swords } from 'lucide-react';
 import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { GeometryFigure } from '../components/encounter/GeometryFigure';
+import { MissionRewardCard } from '../components/campaign/MissionRewardCard';
 import { FeedbackPanel, InventorySkillChip, QuestFrame, UnlockBanner } from '../components/rpg';
 import { findEncounter, skills } from '../data/bootstrap';
 import { validateApplication } from '../engine/encounterEngine';
@@ -95,6 +96,7 @@ function EncounterSession({ encounter }: { encounter: Encounter }) {
             ? `Novas skills registradas: ${encounter.unlockSkillIds.map((id) => skills.find((skill) => skill.id === id)?.shortTitle).filter(Boolean).join(' · ')}.`
             : 'A aplicação foi registrada no seu histórico local.'}
         </UnlockBanner>
+        <MissionRewardCard completionId={encounter.id} />
         <article className="debrief-card">
           <span className="eyebrow">Resolução</span>
           <h2>O argumento completo</h2>
@@ -103,9 +105,6 @@ function EncounterSession({ encounter }: { encounter: Encounter }) {
           <p>{encounter.debrief}</p>
         </article>
         <div className="completion-actions">
-          {encounter.id === 'crossroads-opv' && (
-            <Link className="primary-action" to="/encounter/ordered-correspondence">Próximo encounter</Link>
-          )}
           <Link className="secondary-action" to="/map">Voltar ao mapa</Link>
         </div>
       </section>

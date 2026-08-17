@@ -2,6 +2,7 @@ import { ArrowLeft, Check, Crosshair, RotateCcw } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FeedbackPanel, UnlockBanner } from '../components/rpg';
+import { MissionRewardCard } from '../components/campaign/MissionRewardCard';
 import { useProgress } from '../state/progress';
 
 interface LabTarget {
@@ -29,7 +30,7 @@ export function CoordinateLabPage() {
   const target = targets[targetIndex];
 
   if (!target) return null;
-  if (solved) return <section className="page"><UnlockBanner title="Cartógrafo do Plano">Você investigou sinais, diagonais e eixos diretamente no plano cartesiano.</UnlockBanner><div className="completion-actions"><Link className="primary-action" to="/campaign/analytical/analytic-plane/analytic-q01">Voltar à questão 1</Link><Link className="secondary-action" to="/campaign/analytical">Abrir campanha</Link></div></section>;
+  if (solved) return <section className="page"><UnlockBanner title="Cartógrafo do Plano">Você investigou sinais, diagonais e eixos diretamente no plano cartesiano.</UnlockBanner><MissionRewardCard completionId="coordinate-sign-lab" /></section>;
 
   const verify = () => {
     if (!selected) return;

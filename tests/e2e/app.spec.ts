@@ -41,7 +41,7 @@ test('repeated error recommends a microquest and persists after closing and reop
   await page.getByRole('button', { name: 'Confirmar aplicação' }).click();
   await page.goto('/review');
   await expect(page.getByRole('link', { name: /Espelho de Vértices/ })).toBeVisible();
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v2') ?? '{}'));
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v3') ?? '{}'));
   expect(stored.skills['triangle-congruence'].mastery).toBe(0);
   expect(stored.skills['triangle-congruence'].correctAttempts).toBe(0);
   await page.close();
@@ -55,7 +55,7 @@ test('opening experiences never grants attempts or mastery', async ({ page }) =>
   for (const route of ['/encounter/crossroads-opv', '/proof/isosceles-base-angles?mode=training', '/lab/coordinates']) {
     await page.goto(route);
   }
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v2') ?? '{}'));
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v3') ?? '{}'));
   expect(stored.attempts).toHaveLength(0);
   expect(Object.values(stored.skills).every((profile) => (profile as { mastery: number }).mastery === 0)).toBe(true);
 });
@@ -76,6 +76,38 @@ test('ordered correspondence encounter validates vertices, sides and angles', as
   await applyEncounterRule(page, 'Congruência', ['AB', 'DE', 'BC', 'EF', 'AC', 'DF']);
   await applyEncounterRule(page, 'Congruência', ['∠A', '∠D', '∠B', '∠E', '∠C', '∠F']);
   await expect(page.getByText(/O argumento completo/)).toBeVisible();
+});
+
+test('single path teaches correspondence before the challenge and grants a visible reward', async ({ page }) => {
+  await resetProgress(page);
+  await page.goto('/map');
+  await expect(page.getByRole('link', { name: /Continuar jornada.*A Ordem dos Vértices/ })).toBeVisible();
+  await page.getByRole('link', { name: /Continuar jornada.*A Ordem dos Vértices/ }).click();
+  await page.getByRole('button', { name: /Continuar/ }).click();
+  await page.getByRole('button', { name: /Continuar/ }).click();
+  for (const answer of ['E', 'F', 'DE', '∠F']) {
+    await page.getByRole('button', { name: answer, exact: true }).click();
+    await page.getByRole('button', { name: 'Verificar resposta', exact: true }).click();
+    await page.getByRole('button', { name: /Continuar/ }).click();
+  }
+  await page.getByRole('button', { name: /Continuar/ }).click();
+  await page.getByRole('link', { name: /Iniciar desafio/ }).click();
+  await applyEncounterRule(page, 'Congruência', ['A', 'D', 'B', 'E', 'C', 'F']);
+  await applyEncounterRule(page, 'Congruência', ['AB', 'DE', 'BC', 'EF', 'AC', 'DF']);
+  await applyEncounterRule(page, 'Congruência', ['∠A', '∠D', '∠B', '∠E', '∠C', '∠F']);
+  await expect(page.getByRole('heading', { name: 'Conhecimento conquistado' })).toBeVisible();
+  await expect(page.getByText('+40 XP')).toBeVisible();
+  await page.getByRole('link', { name: /Continuar jornada/ }).click();
+  await expect(page.getByRole('link', { name: /Continuar jornada.*A Encruzilhada/ })).toBeVisible();
+});
+
+test('primary navigation exposes only path, profile and achievements', async ({ page }) => {
+  await page.goto('/map');
+  const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
+  await expect(navigation.getByRole('link')).toHaveCount(3);
+  await expect(navigation.getByRole('link', { name: 'Caminho' })).toBeVisible();
+  await expect(navigation.getByRole('link', { name: 'Perfil' })).toBeVisible();
+  await expect(navigation.getByRole('link', { name: 'Conquistas' })).toBeVisible();
 });
 
 test('guided proof requires five justified mathematical steps', async ({ page }) => {
@@ -153,7 +185,7 @@ test('parallelism and crossover routes demand justification and transfer', async
 for (const width of [360, 390, 412]) {
   test(`mobile ${width}px has no horizontal overflow and touch targets are usable`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
-    for (const route of ['/vertical-slice', '/lab/parallelism', '/lab/line-forge', '/lab/exercise-48']) {
+    for (const route of ['/map', '/mission/ordered-correspondence', '/profile', '/achievements', '/lab/line-forge']) {
       await page.goto(route);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow, route).toBeLessThanOrEqual(1);
@@ -178,7 +210,7 @@ test('direct route refresh works and RPG assets load', async ({ page, request })
 });
 
 test('critical pages have no serious axe violations', async ({ page }) => {
-  for (const route of ['/map', '/vertical-slice', '/lab/coordinates', '/lab/parallelism', '/lab/line-forge', '/lab/exercise-48', '/training', '/review']) {
+  for (const route of ['/map', '/mission/ordered-correspondence', '/profile', '/achievements', '/lab/coordinates', '/lab/parallelism', '/lab/line-forge', '/lab/exercise-48', '/training', '/review']) {
     await page.goto(route);
     const results = await new AxeBuilder({ page }).withTags(['wcag2a', 'wcag2aa']).analyze();
     const serious = results.violations.filter((violation) => ['serious', 'critical'].includes(violation.impact ?? ''));

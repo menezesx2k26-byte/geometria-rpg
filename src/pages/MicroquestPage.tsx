@@ -2,6 +2,7 @@ import { ArrowLeft, Clock3, Target } from 'lucide-react';
 import { useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { FeedbackPanel } from '../components/rpg';
+import { MissionRewardCard } from '../components/campaign/MissionRewardCard';
 import { findMicroquest } from '../data/microquests';
 import { useProgress } from '../state/progress';
 
@@ -48,8 +49,9 @@ export function MicroquestPage() {
           ))}
         </div>
         {feedback && <FeedbackPanel state={feedback}>{feedback === 'correct' ? microquest.successMessage : microquest.errorMessage}</FeedbackPanel>}
+        {feedback === 'correct' && <MissionRewardCard completionId={`microquest:${microquest.id}`} />}
         {feedback === 'correct' ? (
-          <Link className="primary-action primary-action--wide" to={`/encounter/${microquest.returnEncounterId}`}>Retornar ao encounter original</Link>
+          <Link className="secondary-action secondary-action--wide" to={`/encounter/${microquest.returnEncounterId}`}>Rever encounter relacionado</Link>
         ) : (
           <button type="button" className="primary-action primary-action--wide" disabled={!selectedId} onClick={verify}>Verificar relação</button>
         )}
