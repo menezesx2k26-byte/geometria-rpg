@@ -1,0 +1,66 @@
+name: One-shot Cloudflare Worker deploy
+
+on:
+  push:
+    branches:
+      - agent/cloudflare-deploy-20260818-1907
+
+permissions:
+  contents: write
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: 257bca437616da74ece1ce4bbaf0bd89
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Deploy to Cloudflare Workers
+        shell: bash
+        run: |
+          set +e
+          OUTPUT=$(npx wrangler@4 deploy 2>&1)
+          CODE=$?
+          printf '%s\n' "$OUTPUT"
+          printf '%s\n' "$OUTPUT" > .cloudflare-worker-deploy-log.txt
+          URL=$(printf '%s\n' "$OUTPUT" | grep -Eo 'https://[A-Za-z0-9.-]+\.workers\.dev' | tail -1 || true)
+          if [ "$CODE" -eq 0 ]; then STATUS=success; else STATUS=failed; fi
+          {
+            echo "status=$STATUS"
+            echo "exit_code=$CODE"
+            echo "url=$URL"
+            echo "source_branch=codex/v2-gamified-path"
+            echo "source_commit=545b4887e89d8b315afc20f4e70a412259d1c081"
+          } > .cloudflare-worker-deploy-status.txt
+          exit 0
+
+      - name: Save deployment result
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add .cloudflare-worker-deploy-status.txt .cloudflare-worker-deploy-log.txt
+          git commit -m 'ci: record Cloudflare Worker deploy result' || true
+          git push
