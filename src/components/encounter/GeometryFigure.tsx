@@ -40,11 +40,11 @@ export function GeometryFigure({ encounter, selectedObjectIds, onToggle, showPal
         </svg>
       ) : (
         <svg viewBox="0 0 640 430" aria-label="Triângulos ABC e DEF" role="img">
-          <polygon points="80,340 200,70 300,340" />
-          <polygon points="360,340 480,70 580,340" />
-          <path d="M130 225 l14 6 M410 225 l14 6 M250 205 l14 -6 M530 205 l14 -6" className="tick-mark" />
+          <polygon points="50,340 160,70 260,340" />
+          <polygon points="380,340 490,70 590,340" />
+          <path d="M100 225 l14 6 M430 225 l14 6 M215 205 l14 -6 M545 205 l14 -6" className="tick-mark" />
           {[
-            ['A', 192, 55], ['B', 55, 375], ['C', 302, 375], ['D', 472, 55], ['E', 338, 375], ['F', 584, 375],
+            ['A', 152, 55], ['B', 25, 375], ['C', 265, 375], ['D', 482, 55], ['E', 348, 375], ['F', 594, 375],
           ].map(([label, x, y]) => (
             <text
               key={String(label)}
