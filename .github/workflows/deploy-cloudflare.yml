@@ -1,0 +1,54 @@
+name: Deploy Cloudflare Pages
+
+on:
+  push:
+    branches:
+      - codex/v2-gamified-path
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: cloudflare-pages-v2-gamified-path
+  cancel-in-progress: true
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    env:
+      CLOUDFLARE_ACCOUNT_ID: 257bca437616da74ece1ce4bbaf0bd89
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup Node
+        uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Install dependencies
+        run: npm ci
+
+      - name: Lint
+        run: npm run lint
+
+      - name: Test
+        run: npm test
+
+      - name: Build
+        run: npm run build
+
+      - name: Remove legacy redirect file
+        run: rm -f dist/_redirects
+
+      - name: Deploy to Cloudflare Pages
+        run: >-
+          npx wrangler@4 pages deploy dist
+          --project-name=geometria-rpg
+          --branch=v2-gamified-path
+          --commit-hash=${{ github.sha }}
+          --commit-message="${{ github.event.head_commit.message || 'manual deploy' }}"
