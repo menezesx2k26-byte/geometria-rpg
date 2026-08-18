@@ -18,6 +18,9 @@ const LineForgePage = lazy(() => import('./pages/LineForgePage').then((module) =
 const MetricModelingPage = lazy(() => import('./pages/MetricModelingPage').then((module) => ({ default: module.MetricModelingPage })));
 const ParallelismLabPage = lazy(() => import('./pages/ParallelismLabPage').then((module) => ({ default: module.ParallelismLabPage })));
 const CrossoverPage = lazy(() => import('./pages/CrossoverPage').then((module) => ({ default: module.CrossoverPage })));
+const CorrespondenceLessonPage = lazy(() => import('./pages/CorrespondenceLessonPage').then((module) => ({ default: module.CorrespondenceLessonPage })));
+const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
+const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then((module) => ({ default: module.AchievementsPage })));
 
 function PageLoader() {
   return <div className="page-loader" role="status">Abrindo território…</div>;
@@ -30,6 +33,9 @@ export function App() {
         <Route element={<AppShell />}>
           <Route index element={<Navigate to="/map" replace />} />
           <Route path="map" element={<MapPage />} />
+          <Route path="profile" element={<ProfilePage />} />
+          <Route path="achievements" element={<AchievementsPage />} />
+          <Route path="mission/ordered-correspondence" element={<CorrespondenceLessonPage />} />
           <Route path="encounter/official-q15" element={<OfficialQuest15Page />} />
           <Route path="encounter/:id" element={<EncounterPage />} />
           <Route path="codex" element={<CodexPage />} />

@@ -4,6 +4,8 @@ interface GeometryFigureProps {
   encounter: Encounter;
   selectedObjectIds: string[];
   onToggle: (id: string) => void;
+  showPalette?: boolean;
+  readOnly?: boolean;
 }
 
 function ObjectButton({ object, order, onToggle }: { object: GeometryObject; order?: number | undefined; onToggle: () => void }) {
@@ -14,7 +16,7 @@ function ObjectButton({ object, order, onToggle }: { object: GeometryObject; ord
   );
 }
 
-export function GeometryFigure({ encounter, selectedObjectIds, onToggle }: GeometryFigureProps) {
+export function GeometryFigure({ encounter, selectedObjectIds, onToggle, showPalette = true, readOnly = false }: GeometryFigureProps) {
   const selectableIds = new Set(encounter.applicationRules.flatMap((rule) => rule.objectIds));
   const selectableObjects = encounter.objects.filter((object) => selectableIds.has(object.id));
 
@@ -43,11 +45,20 @@ export function GeometryFigure({ encounter, selectedObjectIds, onToggle }: Geome
           <path d="M130 225 l14 6 M410 225 l14 6 M250 205 l14 -6 M530 205 l14 -6" className="tick-mark" />
           {[
             ['A', 192, 55], ['B', 55, 375], ['C', 302, 375], ['D', 472, 55], ['E', 338, 375], ['F', 584, 375],
-          ].map(([label, x, y]) => <text key={String(label)} x={Number(x)} y={Number(y)}>{label}</text>)}
+          ].map(([label, x, y]) => (
+            <text
+              key={String(label)}
+              x={Number(x)}
+              y={Number(y)}
+              className={selectedObjectIds.includes(`vertex-${String(label).toLowerCase()}`) ? 'is-highlighted' : ''}
+            >
+              {label}
+            </text>
+          ))}
         </svg>
       )}
 
-      <div className="figure-object-palette" aria-label="Objetos selecionáveis">
+      {showPalette && <div className="figure-object-palette" aria-label="Objetos selecionáveis">
         {selectableObjects.map((object) => {
           const selectedIndex = selectedObjectIds.indexOf(object.id);
           return (
@@ -55,11 +66,11 @@ export function GeometryFigure({ encounter, selectedObjectIds, onToggle }: Geome
               key={object.id}
               object={object}
               order={selectedIndex >= 0 ? selectedIndex + 1 : undefined}
-              onToggle={() => onToggle(object.id)}
+              onToggle={() => { if (!readOnly) onToggle(object.id); }}
             />
           );
         })}
-      </div>
+      </div>}
     </div>
   );
 }

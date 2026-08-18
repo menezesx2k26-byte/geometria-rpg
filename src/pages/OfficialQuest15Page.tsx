@@ -2,6 +2,8 @@ import { ArrowLeft, Check, Swords } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FeedbackPanel, QuestFrame, UnlockBanner } from '../components/rpg';
+import { MissionRewardCard } from '../components/campaign/MissionRewardCard';
+import { CompetencyDebrief } from '../components/learning/CompetencyDebrief';
 import { officialQuest15 } from '../data/officialQuest15';
 import { useProgress } from '../state/progress';
 
@@ -14,7 +16,7 @@ export function OfficialQuest15Page() {
   const [solved, setSolved] = useState(false);
   const step = officialQuest15.steps[stepIndex];
 
-  if (solved) return <section className="page"><UnlockBanner title="Questão 15 resolvida">Resposta oficial confirmada: {officialQuest15.officialAnswer}</UnlockBanner><article className="debrief-card"><span className="eyebrow">Debrief</span><h2>Da figura à razão</h2><p>O percurso exigiu OPV, escolha explícita de ALA, correspondência ordenada, duas equações e a consequência métrica da congruência.</p></article><div className="completion-actions"><Link className="primary-action" to="/vertical-slice">Voltar à Fortaleza</Link><Link className="secondary-action" to="/review">Abrir diagnóstico</Link></div></section>;
+  if (solved) return <section className="page"><UnlockBanner title="Questão 15 resolvida">Resposta oficial confirmada: {officialQuest15.officialAnswer}</UnlockBanner><MissionRewardCard completionId={officialQuest15.id} /><CompetencyDebrief encounterId={officialQuest15.id} /><article className="debrief-card"><span className="eyebrow">Debrief</span><h2>Da figura à razão</h2><p>O percurso exigiu OPV, escolha explícita de ALA, correspondência ordenada, duas equações e a consequência métrica da congruência.</p></article><div className="completion-actions"><Link className="secondary-action" to="/review">Abrir diagnóstico</Link></div></section>;
   if (!step) return null;
 
   const verify = () => {
