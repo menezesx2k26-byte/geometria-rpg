@@ -1,4 +1,4 @@
-name: Deploy Cloudflare Pages
+name: Deploy Cloudflare Worker
 
 on:
   push:
@@ -10,7 +10,7 @@ permissions:
   contents: read
 
 concurrency:
-  group: cloudflare-pages-v2-gamified-path
+  group: cloudflare-worker-v2-gamified-path
   cancel-in-progress: true
 
 jobs:
@@ -42,13 +42,5 @@ jobs:
       - name: Build
         run: npm run build
 
-      - name: Remove legacy redirect file
-        run: rm -f dist/_redirects
-
-      - name: Deploy to Cloudflare Pages
-        run: >-
-          npx wrangler@4 pages deploy dist
-          --project-name=geometria-rpg
-          --branch=v2-gamified-path
-          --commit-hash=${{ github.sha }}
-          --commit-message="${{ github.event.head_commit.message || 'manual deploy' }}"
+      - name: Deploy to Cloudflare Workers
+        run: npx wrangler@4 deploy
