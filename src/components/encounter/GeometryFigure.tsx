@@ -40,6 +40,7 @@ export function GeometryFigure({ encounter, selectedObjectIds, onToggle, showPal
         </svg>
       ) : (
         <svg viewBox="0 0 640 430" aria-label="Triângulos ABC e DEF" role="img">
+          {/* Keep a wide central gutter: C/E labels must remain distinct on narrow mobile viewports. */}
           <polygon points="50,340 160,70 260,340" />
           <polygon points="380,340 490,70 590,340" />
           <path d="M100 225 l14 6 M430 225 l14 6 M215 205 l14 -6 M545 205 l14 -6" className="tick-mark" />
