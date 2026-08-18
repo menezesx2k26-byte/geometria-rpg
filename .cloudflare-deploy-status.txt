@@ -1,2 +1,0 @@
-status=missing_credentials
-commit=aa044c7001f7c73858e5dc1a2f3aaf6d33b0cfeb
