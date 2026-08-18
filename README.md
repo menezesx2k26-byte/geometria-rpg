@@ -10,7 +10,9 @@ Uma experiência mobile-first de Geometria Euclidiana e Analítica organizada em
 
 O ponto de entrada é `/map`. A navegação principal foi reduzida a **Caminho**, **Perfil** e **Conquistas**; Codex, treino, revisão, campanhas e as expedições anteriores continuam preservados na Biblioteca da Academia, dentro do Perfil.
 
-Nenhuma rota concede domínio por leitura. Somente tentativas matemáticas registradas alteram o perfil. A progressão V3 inclui XP, nível, estrelas, sequência por dias, quests curtas, conquistas, revisão espaçada e migração automática dos dados V1/V2.
+Nenhuma rota concede domínio por leitura. Somente tentativas matemáticas registradas alteram o perfil. A progressão V4 mantém XP, nível, estrelas, sequência por dias, quests, conquistas e revisão espaçada, mas calcula domínio H1–H15 em um fluxo independente baseado em correção, justificação, independência e verificação. Dados V1/V2/V3 são migrados sem apagar a chave V3 de origem.
+
+“Continuar jornada” sempre aponta para a próxima missão principal incompleta. Revisões vencidas e recomendações adaptativas aparecem como rotas secundárias opcionais; elas não bloqueiam nem reordenam a campanha.
 
 ## Desenvolvimento
 
@@ -54,8 +56,10 @@ O release atual foi publicado por Direct Upload com Wrangler e está associado a
 ## Arquitetura
 
 - `src/data`: conteúdo declarativo, sem hardcode nas páginas;
-- `src/engine`: regras puras dos encounters, provas, retas, sistemas e distâncias exatas;
+- `src/engine`: regras puras dos encounters, provas, geometria analítica, assessment C/J/I/V, evidências, migração e seleção adaptativa;
 - `src/state`: progresso persistido localmente;
 - `src/components`: interfaces reutilizáveis de geometria, gameplay, prova e navegação;
 - `src/pages`: mapa, campanhas, encounters, Proof Engine, laboratórios de modelagem, Codex, treino filtrável e revisão adaptativa;
 - `src/types`: modelo do domínio matemático e pedagógico.
+
+A arquitetura e as garantias do motor V4 estão documentadas em [`docs/adaptive-engine.md`](./docs/adaptive-engine.md).

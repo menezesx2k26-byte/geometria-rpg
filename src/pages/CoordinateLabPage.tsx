@@ -3,6 +3,7 @@ import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { FeedbackPanel, UnlockBanner } from '../components/rpg';
 import { MissionRewardCard } from '../components/campaign/MissionRewardCard';
+import { CompetencyDebrief } from '../components/learning/CompetencyDebrief';
 import { useProgress } from '../state/progress';
 
 interface LabTarget {
@@ -30,7 +31,7 @@ export function CoordinateLabPage() {
   const target = targets[targetIndex];
 
   if (!target) return null;
-  if (solved) return <section className="page"><UnlockBanner title="Cartógrafo do Plano">Você investigou sinais, diagonais e eixos diretamente no plano cartesiano.</UnlockBanner><MissionRewardCard completionId="coordinate-sign-lab" /></section>;
+  if (solved) return <section className="page"><UnlockBanner title="Cartógrafo do Plano">Você investigou sinais, diagonais e eixos diretamente no plano cartesiano.</UnlockBanner><MissionRewardCard completionId="coordinate-sign-lab" /><CompetencyDebrief encounterId="coordinate-sign-lab" /></section>;
 
   const verify = () => {
     if (!selected) return;

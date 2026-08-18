@@ -2,20 +2,37 @@
 
 Data: 17 de agosto de 2026
 
+## Atualização V4 · 18 de agosto de 2026
+
+| Verificação da integração adaptativa | Resultado |
+| --- | --- |
+| TypeScript estrito e build Vite | PASSOU |
+| ESLint | PASSOU |
+| Vitest | PASSOU — 26 testes em 6 arquivos |
+| Catálogo H1–H15, S1–S7 e P1–P10 | PASSOU — validação estrutural automatizada |
+| Migração V3→V4 | PASSOU — preserva tentativas, XP e a origem V3; J/V legados permanecem `null` |
+| C/J/I/V parcial | PASSOU — componentes não observados não viram zero e a cobertura é renormalizada |
+| Fórmula de evidência | PASSOU — teste de `Mnovo = 0,75 Manterior + 0,25 E` |
+| Preservação H10 forte | PASSOU — H6/H15 são treinadas em prova sem regredir para identificação angular elementar |
+| CTA principal | COBERTO, PENDENTE DE EXECUÇÃO E2E — o cenário garante que revisão vencida não substitua “Continuar jornada” |
+| Playwright desta alteração | BLOQUEADO NO AMBIENTE — o download do Chromium retornou arquivo de 0 MiB; a suíte V2 anteriormente aprovada permanece registrada abaixo, mas as mudanças V4 ainda exigem nova execução em navegador |
+
+O bloqueio do Playwright é de infraestrutura e não foi convertido em aprovação. A suíte foi atualizada de 17 para 19 cenários, incluindo CTA principal e backup/migração V3→V4.
+
 ## Aplicação
 
 | Critério | Resultado | Evidência |
 | --- | --- | --- |
 | Build e TypeScript estrito | PASSOU | `npm run build` executa `tsc -b` e o build de produção do Vite. |
 | Lint | PASSOU | `npm run lint`. |
-| Testes unitários | PASSOU | 20 testes Vitest cobrem conteúdo, encounters, Proof Engine, engine analítica, migração V3, recompensas e revisão espaçada. |
-| Chromium real | PASSOU | 17 testes Playwright cobrem as experiências matemáticas anteriores e o novo caminho completo, persistência, domínio, mobile, rotas, assets e acessibilidade. |
+| Testes unitários | PASSOU | 26 testes Vitest cobrem conteúdo, engines anteriores, motor adaptativo, migração V4, recompensas e revisão espaçada. |
+| Chromium real | BASE V2 PASSOU; V4 PENDENTE | Os 17 testes da versão anterior passaram; a suíte V4 possui 19 cenários e precisa ser reexecutada quando o Chromium estiver disponível. |
 | Matemática | PASSOU | Além da trilha euclidiana anterior, foram validados determinante de colinearidade, equação geral, retas equivalentes, verticais/horizontais, SPD/SI/SPI e o exercício 48 com radicais exatos. |
 | Gameplay ativo | PASSOU | Congruência, paralelismo, Forja das Retas, modelagem métrica, crossover e plano cartesiano exigem decisões registradas; não há domínio por leitura. |
 | Proof Engine | PASSOU | Aceita passo correto e ordem equivalente de premissas independentes; rejeita ordem causal inválida, salto lógico, justificativa errada e construção inútil. |
-| Mastery | PASSOU | Abrir páginas não cria tentativa nem domínio; erros repetidos mantêm domínio em zero e geram microquest. |
+| Mastery | PASSOU | Abrir páginas não cria tentativa ou evidência; erros produzem evidência negativa sem retirar XP e podem gerar microquest. |
 | Persistência | PASSOU | Progresso, erros e microquest recomendada sobrevivem a reload por `localStorage`. |
-| Migração V3 | PASSOU | Dados V1/V2 são preservados e convertidos para XP, nível e missões concluídas sem apagar tentativas ou mastery. |
+| Migração V4 | PASSOU | Dados V1/V2/V3 são preservados; XP, missões e tentativas sobrevivem, e a chave V3 não é apagada. |
 | Loop de recompensa | PASSOU | Missão → feedback → XP/estrelas → quest/conquista → próxima missão foi validado em Chromium. |
 | Revisão espaçada | PASSOU | Histórico por conceito calcula intervalo e prioriza microquest vencida sem alterar a ordem da campanha. |
 | Mobile | PASSOU | Sem overflow horizontal em 360, 390 e 412 px no caminho, mini lesson, perfil, conquistas e laboratório denso; alvos interativos auditados. |

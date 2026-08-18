@@ -1,9 +1,10 @@
-import { ArrowRight, Check, Crown, Flame, LockKeyhole, MapPinned, Shield, Sparkles, Star } from 'lucide-react';
+import { ArrowRight, BrainCircuit, Check, Crown, Flame, LockKeyhole, MapPinned, RotateCcw, Shield, Sparkles, Star } from 'lucide-react';
 import type { CSSProperties } from 'react';
 import { Link } from 'react-router-dom';
 import { activeQuest, campaignChapters, campaignNodes, getCampaignNodeState, getDueAdaptiveReview, getNextCampaignNode } from '../data/gameCampaign';
 import { useProgress } from '../state/progress';
 import type { CampaignNode, CampaignNodeState } from '../types/domain';
+import { selectAdaptiveRecommendation } from '../engine/adaptiveSelector';
 
 const stateLabels: Record<CampaignNodeState, string> = {
   locked: 'Bloqueada', current: 'Agora', available: 'Disponível', completed: 'Concluída', perfect: 'Perfeita',
@@ -37,6 +38,7 @@ export function MapPage() {
   const { progress } = useProgress();
   const nextNode = getNextCampaignNode(progress);
   const dueReview = getDueAdaptiveReview(progress);
+  const adaptiveRecommendation = selectAdaptiveRecommendation(progress.competencyStates, progress.attemptsV4);
   const quest = activeQuest(progress);
   const questProgress = quest ? progress.quests[quest.id] : undefined;
   const levelProgress = progress.xp % 100;
@@ -56,13 +58,35 @@ export function MapPage() {
         </div>
       </header>
 
-      {dueReview || nextNode ? (
-        <Link className="continue-mission" to={dueReview?.route ?? nextNode!.route}>
-          <span><MapPinned /><small>{dueReview ? 'Fortalecer memória' : 'Continuar jornada'}</small><strong>{dueReview?.title ?? nextNode!.title}</strong><em>{dueReview?.subtitle ?? nextNode!.subtitle}</em></span>
+      {nextNode ? (
+        <Link className="continue-mission" to={nextNode.route}>
+          <span><MapPinned /><small>Continuar jornada</small><strong>{nextNode.title}</strong><em>{nextNode.subtitle}</em></span>
           <ArrowRight />
         </Link>
       ) : (
         <div className="continue-mission is-complete"><span><Crown /><small>Jornada concluída</small><strong>Todos os selos foram abertos</strong></span></div>
+      )}
+
+      {(dueReview || adaptiveRecommendation) && (
+        <section className="adaptive-suggestions" aria-label="Recomendações opcionais">
+          <header><span className="eyebrow">Rotas secundárias</span><h2>Fortalecer sem sair do caminho</h2><p>Estas atividades não substituem nem bloqueiam a próxima missão.</p></header>
+          <div>
+            {dueReview && (
+              <Link to={dueReview.route}>
+                <RotateCcw />
+                <span><small>Revisão programada</small><strong>{dueReview.title}</strong><em>{dueReview.subtitle}</em></span>
+                <ArrowRight />
+              </Link>
+            )}
+            {adaptiveRecommendation && adaptiveRecommendation.route !== dueReview?.route && (
+              <Link to={adaptiveRecommendation.route}>
+                <BrainCircuit />
+                <span><small>{adaptiveRecommendation.actionLabel}</small><strong>{adaptiveRecommendation.title}</strong><em>{adaptiveRecommendation.reason}</em></span>
+                <ArrowRight />
+              </Link>
+            )}
+          </div>
+        </section>
       )}
 
       {quest && questProgress && (
