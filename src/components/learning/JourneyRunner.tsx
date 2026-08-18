@@ -1,10 +1,11 @@
 import { ArrowLeft, ArrowRight, Check, Lightbulb, RotateCcw } from 'lucide-react';
 import { useMemo, useState, type ReactNode } from 'react';
-import { Link } from 'react-router-dom';
+import { Link, useSearchParams } from 'react-router-dom';
 import type { JourneyStage } from '../../data/interactiveJourneys';
 import { useProgress } from '../../state/progress';
 import { FeedbackPanel, UnlockBanner } from '../rpg';
 import { MissionRewardCard } from '../campaign/MissionRewardCard';
+import { CompetencyDebrief } from './CompetencyDebrief';
 
 interface JourneyRunnerProps {
   journeyId: string;
@@ -32,13 +33,22 @@ export function JourneyRunner({
   renderDiagram,
 }: JourneyRunnerProps) {
   const { completeEncounter, recordAttempt } = useProgress();
+  const [searchParams] = useSearchParams();
+  const focusId = searchParams.get('focus');
+  const focusedStage = focusId ? stages.find((item) => item.id === focusId) : undefined;
+  const activeStages = useMemo(() => focusedStage ? [focusedStage] : stages, [focusedStage, stages]);
+  const effectiveJourneyId = focusedStage ? `adaptive:${journeyId}:${focusedStage.id}` : journeyId;
+  const effectiveBackTo = focusedStage ? '/review' : backTo;
+  const effectiveBackLabel = focusedStage ? 'Voltar ao diagnóstico' : backLabel;
   const [stageIndex, setStageIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string>();
   const [feedback, setFeedback] = useState<{ state: 'correct' | 'incorrect'; message: string }>();
   const [hintUsed, setHintUsed] = useState(false);
+  const [selfConfidence, setSelfConfidence] = useState<number>();
   const [completed, setCompleted] = useState(false);
-  const stage = stages[stageIndex];
-  const allSkillIds = useMemo(() => [...new Set(stages.flatMap((item) => item.skillIds))], [stages]);
+  const stage = activeStages[stageIndex];
+  const diagramStageIndex = focusedStage ? stages.findIndex((item) => item.id === focusedStage.id) : stageIndex;
+  const allSkillIds = useMemo(() => [...new Set(activeStages.flatMap((item) => item.skillIds))], [activeStages]);
 
   if (!stage) return null;
 
@@ -48,7 +58,7 @@ export function JourneyRunner({
     if (!selected) return;
     const correct = selectedId === stage.correctOptionId;
     recordAttempt(
-      journeyId,
+      effectiveJourneyId,
       stage.id,
       [selectedId],
       correct,
@@ -57,7 +67,9 @@ export function JourneyRunner({
         skillIds: stage.skillIds,
         masteryDimensions: stage.masteryDimensions,
         hintsUsed: hintUsed ? 1 : 0,
-        position: window.location.pathname,
+        hintTier: hintUsed ? 2 : undefined,
+        selfConfidence,
+        position: `${window.location.pathname}${window.location.search}`,
       },
     );
     setFeedback({
@@ -68,8 +80,8 @@ export function JourneyRunner({
 
   const advance = () => {
     if (feedback?.state !== 'correct') return;
-    if (stageIndex === stages.length - 1) {
-      completeEncounter(journeyId, allSkillIds, allSkillIds.map((id) => `codex-${id}`));
+    if (stageIndex === activeStages.length - 1) {
+      completeEncounter(effectiveJourneyId, allSkillIds, allSkillIds.map((id) => `codex-${id}`));
       setCompleted(true);
       return;
     }
@@ -77,6 +89,7 @@ export function JourneyRunner({
     setSelectedId(undefined);
     setFeedback(undefined);
     setHintUsed(false);
+    setSelfConfidence(undefined);
     window.scrollTo({ top: 0, behavior: 'smooth' });
   };
 
@@ -84,16 +97,17 @@ export function JourneyRunner({
     return (
       <section className="page journey-page journey-complete-page">
         <UnlockBanner title={completionTitle}>{completionText}</UnlockBanner>
-        <MissionRewardCard completionId={journeyId} />
+        <MissionRewardCard completionId={effectiveJourneyId} />
+        <CompetencyDebrief encounterId={effectiveJourneyId} />
         <div className="journey-complete-grid">
           <section>
             <span className="eyebrow">Cadeia reconstruída</span>
             <h1>{title}</h1>
-            <ol>{stages.map((item) => <li key={item.id}><Check size={16} /><span>{item.workspaceEntry}</span></li>)}</ol>
+            <ol>{activeStages.map((item) => <li key={item.id}><Check size={16} /><span>{item.workspaceEntry}</span></li>)}</ol>
           </section>
           <div className="completion-actions">
-            <Link className="primary-action" to={backTo}>{backLabel}</Link>
-            <button type="button" className="secondary-action" onClick={() => { setStageIndex(0); setCompleted(false); setSelectedId(undefined); setFeedback(undefined); setHintUsed(false); }}><RotateCcw size={16} /> Refazer sem dicas</button>
+            <Link className="primary-action" to={effectiveBackTo}>{effectiveBackLabel}</Link>
+            <button type="button" className="secondary-action" onClick={() => { setStageIndex(0); setCompleted(false); setSelectedId(undefined); setFeedback(undefined); setHintUsed(false); setSelfConfidence(undefined); }}><RotateCcw size={16} /> Refazer sem dicas</button>
           </div>
         </div>
       </section>
@@ -101,25 +115,25 @@ export function JourneyRunner({
   }
 
   const visibleWorkspace = [
-    ...stages.slice(0, stageIndex),
+    ...activeStages.slice(0, stageIndex),
     ...(feedback?.state === 'correct' ? [stage] : []),
   ];
 
   return (
     <section className="page journey-page">
-      <Link className="back-link" to={backTo}><ArrowLeft size={16} /> {backLabel}</Link>
+      <Link className="back-link" to={effectiveBackTo}><ArrowLeft size={16} /> {effectiveBackLabel}</Link>
       <header className="journey-heading">
         <span className="eyebrow">{kicker}</span>
         <h1>{title}</h1>
         <p>{description}</p>
-        <div className="journey-progress" aria-label={`Etapa ${stageIndex + 1} de ${stages.length}`}>
-          <span style={{ width: `${((stageIndex + (feedback?.state === 'correct' ? 1 : 0)) / stages.length) * 100}%` }} />
+        <div className="journey-progress" aria-label={`Etapa ${stageIndex + 1} de ${activeStages.length}`}>
+          <span style={{ width: `${((stageIndex + (feedback?.state === 'correct' ? 1 : 0)) / activeStages.length) * 100}%` }} />
         </div>
       </header>
 
       <div className="journey-layout">
         <div className="journey-visual-column">
-          {renderDiagram(stageIndex, feedback?.state === 'correct')}
+          {renderDiagram(diagramStageIndex, feedback?.state === 'correct')}
           <section className="relation-ledger" aria-label="Relações estabelecidas">
             <small>Workspace · relações estabelecidas</small>
             {visibleWorkspace.length ? (
@@ -129,7 +143,7 @@ export function JourneyRunner({
         </div>
 
         <aside className="journey-decision-panel">
-          <span className="eyebrow">{stage.phase} · {stageIndex + 1}/{stages.length}</span>
+          <span className="eyebrow">{stage.phase} · {stageIndex + 1}/{activeStages.length}</span>
           <h2>{stage.prompt}</h2>
           <p>{stage.context}</p>
           <div className="journey-options" role="group" aria-label="Escolhas matemáticas">
@@ -146,12 +160,32 @@ export function JourneyRunner({
               </button>
             ))}
           </div>
-          {hintUsed && <aside className="journey-hint" role="status"><Lightbulb size={17} /><span>{stage.hint}</span></aside>}
+          <fieldset className="confidence-check">
+            <legend>Antes de verificar, quão seguro você está? <small>opcional</small></legend>
+            <div>
+              {[
+                { value: 0.25, label: 'Ainda pensando' },
+                { value: 0.60, label: 'Razoavelmente' },
+                { value: 0.90, label: 'Muito seguro' },
+              ].map((option) => (
+                <button
+                  type="button"
+                  key={option.value}
+                  className={selfConfidence === option.value ? 'is-selected' : ''}
+                  aria-pressed={selfConfidence === option.value}
+                  onClick={() => setSelfConfidence(option.value)}
+                >
+                  {option.label}
+                </button>
+              ))}
+            </div>
+          </fieldset>
+          {hintUsed && <aside className="journey-hint" role="status"><Lightbulb size={17} /><span><small>Pista conceitual · tier 2</small>{stage.hint}</span></aside>}
           {feedback && <FeedbackPanel state={feedback.state}>{feedback.message}</FeedbackPanel>}
           <div className="journey-actions">
             <button type="button" className="text-action" disabled={hintUsed || feedback?.state === 'correct'} onClick={() => setHintUsed(true)}><Lightbulb size={16} /> Pedir pista</button>
             <button type="button" className="primary-action" disabled={!selectedId} onClick={feedback?.state === 'correct' ? advance : verify}>
-              {feedback?.state === 'correct' ? <>{stageIndex === stages.length - 1 ? 'Concluir rota' : 'Registrar e avançar'} <ArrowRight size={16} /></> : 'Sustentar resposta'}
+              {feedback?.state === 'correct' ? <>{stageIndex === activeStages.length - 1 ? 'Concluir rota' : 'Registrar e avançar'} <ArrowRight size={16} /></> : 'Sustentar resposta'}
             </button>
           </div>
         </aside>

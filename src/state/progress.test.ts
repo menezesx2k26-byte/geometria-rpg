@@ -2,7 +2,7 @@ import { describe, expect, it } from 'vitest';
 import { getCampaignNodeState, getDueAdaptiveReview } from '../data/gameCampaign';
 import { applyMissionCompletion, createInitialProgress, migrateProgress } from './progress';
 
-describe('game progress V3', () => {
+describe('game progress V4', () => {
   it('migrates V2 progress without losing attempts or completed encounters', () => {
     const legacy = {
       ...createInitialProgress(),
@@ -26,8 +26,12 @@ describe('game progress V3', () => {
 
     const migrated = migrateProgress(legacy);
 
-    expect(migrated.version).toBe(3);
+    expect(migrated.version).toBe(4);
     expect(migrated.attempts).toHaveLength(1);
+    expect(migrated.attemptsV4).toHaveLength(1);
+    expect(migrated.attemptsV4[0]?.assessment.justification).toBeNull();
+    expect(migrated.attemptsV4[0]?.assessment.verification).toBeNull();
+    expect(migrated.competencyStates.H5.evidenceCount).toBe(1);
     expect(migrated.completedEncounterIds).toContain('ordered-correspondence');
     expect(migrated.missionProgress['mission-vertex-order']?.bestStars).toBe(1);
     expect(migrated.xp).toBe(25);

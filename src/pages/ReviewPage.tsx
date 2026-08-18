@@ -1,10 +1,12 @@
-import { BrainCircuit, Clock3, Play, RotateCcw, Target } from 'lucide-react';
+import { ArrowRight, BrainCircuit, Clock3, Gauge, Play, RotateCcw, ShieldCheck, Target } from 'lucide-react';
 import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { microquests } from '../data/microquests';
 import { skills } from '../data/bootstrap';
 import { useProgress } from '../state/progress';
 import type { MasteryDimension } from '../types/domain';
+import { confidenceLabel, findHardCompetency } from '../data/competencies';
+import { selectAdaptiveRecommendation } from '../engine/adaptiveSelector';
 
 const dimensionLabels: Record<MasteryDimension, string> = {
   recognition: 'Reconhecimento',
@@ -41,6 +43,16 @@ export function ReviewPage() {
     .slice(0, 4)
     .map((profile) => ({ profile, skill: skills.find((skill) => skill.id === profile.skillId) }))
     .filter((item) => item.skill !== undefined);
+  const observedCompetencies = Object.values(progress.competencyStates).filter((state) => state.evidenceCount > 0);
+  const strengths = observedCompetencies
+    .filter((state) => state.mastery >= 0.70)
+    .sort((left, right) => right.mastery - left.mastery)
+    .slice(0, 3);
+  const developing = [...observedCompetencies]
+    .filter((state) => state.mastery < 0.85)
+    .sort((left, right) => left.mastery - right.mastery)
+    .slice(0, 3);
+  const adaptiveRecommendation = selectAdaptiveRecommendation(progress.competencyStates, progress.attemptsV4);
 
   return (
     <section className="page">
@@ -51,6 +63,30 @@ export function ReviewPage() {
         <div><Target size={28} /><strong>{incorrect.length}</strong><span>erros diagnosticados</span></div>
         <div><Play size={28} /><strong>{progress.completedEncounterIds.length}</strong><span>encounters concluídos</span></div>
       </div>
+
+      <section className="geometer-sheet">
+        <header><span className="eyebrow">Ficha do Geômetra</span><h2>Competências observadas</h2><p>As estimativas abaixo não usam XP, nível, estrelas ou streak.</p></header>
+        {observedCompetencies.length ? (
+          <div className="geometer-sheet__columns">
+            <div><h3><ShieldCheck size={17} /> Evidências mais fortes</h3>{strengths.length ? strengths.map((state) => {
+              const definition = findHardCompetency(state.competencyId);
+              return definition ? <article key={state.competencyId}><span><strong>{definition.rpgName}</strong><small>{definition.name}</small></span><em>{Math.round(state.mastery * 100)}%</em><small><Gauge size={13} /> confiança {confidenceLabel(state.evidenceCount, state.confidence)}</small></article> : null;
+            }) : <p>Ainda não há evidência suficiente para nomear uma força com segurança.</p>}</div>
+            <div><h3><BrainCircuit size={17} /> Em desenvolvimento</h3>{developing.length ? developing.map((state) => {
+              const definition = findHardCompetency(state.competencyId);
+              return definition ? <article key={state.competencyId}><span><strong>{definition.rpgName}</strong><small>{definition.name}</small></span><em>{Math.round(state.mastery * 100)}%</em><small><Gauge size={13} /> confiança {confidenceLabel(state.evidenceCount, state.confidence)}</small></article> : null;
+            }) : <p>Nenhuma competência em desenvolvimento foi observada.</p>}</div>
+          </div>
+        ) : <p>Conclua decisões matemáticas para formar uma ficha baseada em evidências.</p>}
+      </section>
+
+      {adaptiveRecommendation && (
+        <Link className="adaptive-primary-card" to={adaptiveRecommendation.route}>
+          <BrainCircuit />
+          <span><small>{adaptiveRecommendation.actionLabel}</small><strong>{adaptiveRecommendation.title}</strong><em>{adaptiveRecommendation.reason}</em></span>
+          <ArrowRight />
+        </Link>
+      )}
 
       <section className="mastery-dashboard">
         <h2>Perfil de domínio · 0–100</h2>

@@ -1,3 +1,11 @@
+import type {
+  AdaptiveState,
+  AttemptV4,
+  BehaviorObservation,
+  CompetencyState,
+  HardCompetencyId,
+} from './competency';
+
 export type SkillState = 'locked' | 'available' | 'practicing' | 'mastered';
 export type SkillType =
   | 'definition'
@@ -425,7 +433,7 @@ export interface MissionRewardSummary {
 }
 
 export interface UserProgress {
-  version: 3;
+  version: 4;
   skills: Record<string, MasteryProfile>;
   attempts: Attempt[];
   completedEncounterIds: string[];
@@ -444,6 +452,10 @@ export interface UserProgress {
   achievements: AchievementProgress[];
   reviewSchedule: Record<string, ReviewSchedule>;
   analyticsEvents: GameAnalyticsEvent[];
+  competencyStates: Record<HardCompetencyId, CompetencyState>;
+  attemptsV4: AttemptV4[];
+  recentBehaviorObservations: BehaviorObservation[];
+  adaptiveState: AdaptiveState;
   lastMissionReward?: MissionRewardSummary;
 }
 

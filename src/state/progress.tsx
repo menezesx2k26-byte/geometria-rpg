@@ -9,6 +9,11 @@ import {
   initialQuestProgress,
 } from '../data/gameCampaign';
 import { microquestForTag } from '../data/microquests';
+import { buildAdaptiveAttempt } from '../engine/adaptiveAttempt';
+import { trimBehaviorObservations } from '../engine/behaviorObservations';
+import { createInitialAdaptiveState, normalizeCompetencyStates, replayLegacyAttempts } from '../engine/competencyMigration';
+import { applyEvidenceToStates, createInitialCompetencyStates } from '../engine/evidenceEngine';
+import type { AssessmentComponents, HintTier } from '../types/competency';
 import type {
   Attempt,
   DiagnosticTag,
@@ -21,14 +26,18 @@ import type {
   UserProgress,
 } from '../types/domain';
 
-export const STORAGE_KEY = 'geometria-rpg:progress:v3';
-const LEGACY_STORAGE_KEYS = ['geometria-rpg:progress:v2', 'geometria-rpg:progress:v1'];
+export const STORAGE_KEY = 'geometria-rpg:progress:v4';
+const LEGACY_STORAGE_KEYS = ['geometria-rpg:progress:v3', 'geometria-rpg:progress:v2', 'geometria-rpg:progress:v1'];
 const MAX_ANALYTICS_EVENTS = 250;
 
 interface AttemptMetadata {
   skillIds?: string[];
   masteryDimensions?: MasteryDimension[];
   hintsUsed?: number;
+  hintTier?: HintTier | undefined;
+  selfConfidence?: number | null | undefined;
+  durationMs?: number | null | undefined;
+  assessment?: Partial<AssessmentComponents> | undefined;
   position?: string;
 }
 
@@ -46,7 +55,7 @@ function createProfile(skillId: string, dimensions: MasteryDimension[], availabl
 export function createInitialProgress(): UserProgress {
   const roots = skills.filter((skill) => skill.prerequisites.length === 0);
   return {
-    version: 3,
+    version: 4,
     skills: Object.fromEntries(
       skills.map((skill) => [
         skill.id,
@@ -70,6 +79,10 @@ export function createInitialProgress(): UserProgress {
     achievements: [],
     reviewSchedule: {},
     analyticsEvents: [],
+    competencyStates: createInitialCompetencyStates(),
+    attemptsV4: [],
+    recentBehaviorObservations: [],
+    adaptiveState: createInitialAdaptiveState(),
   };
 }
 
@@ -295,6 +308,7 @@ export function migrateProgress(value: unknown): UserProgress {
   const initial = createInitialProgress();
   if (!value || typeof value !== 'object') return initial;
   const stored = value as Partial<UserProgress>;
+  const storedVersion = (value as { version?: number }).version;
   const storedSkills = stored.skills ?? {};
   const nextSkills = Object.fromEntries(
     skills.map((skill) => {
@@ -332,10 +346,19 @@ export function migrateProgress(value: unknown): UserProgress {
     const node = campaignNodes.find((candidate) => candidate.id === id);
     return total + (node?.reward.xp ?? 0);
   }, 0);
+  const replayed = storedVersion === 4
+    ? undefined
+    : replayLegacyAttempts(attempts);
+  const competencyStates = storedVersion === 4
+    ? normalizeCompetencyStates(stored.competencyStates)
+    : replayed?.states ?? initial.competencyStates;
+  const attemptsV4 = storedVersion === 4 && Array.isArray(stored.attemptsV4)
+    ? stored.attemptsV4
+    : replayed?.attempts ?? [];
   return {
     ...initial,
     ...stored,
-    version: 3,
+    version: 4,
     skills: nextSkills,
     attempts,
     completedEncounterIds,
@@ -354,23 +377,40 @@ export function migrateProgress(value: unknown): UserProgress {
     achievements: stored.achievements ?? [],
     reviewSchedule: stored.reviewSchedule ?? {},
     analyticsEvents: stored.analyticsEvents ?? [],
+    competencyStates,
+    attemptsV4,
+    recentBehaviorObservations: storedVersion === 4 && Array.isArray(stored.recentBehaviorObservations)
+      ? trimBehaviorObservations(stored.recentBehaviorObservations)
+      : trimBehaviorObservations(attemptsV4.flatMap((attempt) => attempt.behaviorObservations)),
+    adaptiveState: storedVersion === 4
+      ? { ...initial.adaptiveState, ...(stored.adaptiveState ?? {}) }
+      : initial.adaptiveState,
     ...(stored.lastMissionReward ? { lastMissionReward: stored.lastMissionReward } : {}),
   };
 }
 
 function loadProgress(): UserProgress {
   if (typeof window === 'undefined') return createInitialProgress();
-  try {
-    const current = window.localStorage.getItem(STORAGE_KEY);
-    if (current) return migrateProgress(JSON.parse(current));
-    for (const key of LEGACY_STORAGE_KEYS) {
-      const legacy = window.localStorage.getItem(key);
-      if (legacy) return migrateProgress(JSON.parse(legacy));
+  const current = window.localStorage.getItem(STORAGE_KEY);
+  if (current) {
+    try {
+      return migrateProgress(JSON.parse(current));
+    } catch {
+      // A origem V3 permanece intacta e pode recuperar uma gravação V4 inválida.
     }
-    return createInitialProgress();
-  } catch {
-    return createInitialProgress();
   }
+  for (const key of LEGACY_STORAGE_KEYS) {
+    const legacy = window.localStorage.getItem(key);
+    if (!legacy) continue;
+    try {
+      const migrated = migrateProgress(JSON.parse(legacy));
+      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      return migrated;
+    } catch {
+      // Tenta a próxima versão legada sem remover nenhuma chave.
+    }
+  }
+  return createInitialProgress();
 }
 
 interface ProgressContextValue {
@@ -420,6 +460,25 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         attemptedAt: now.toISOString(),
       };
       commit((current) => {
+        const adaptiveAttempt = buildAdaptiveAttempt({
+          id: `${now.getTime()}-${encounterId}-${stepId}-${Math.random().toString(36).slice(2, 8)}`,
+          encounterId,
+          stepId,
+          response: selectedIds,
+          correct,
+          masteryDimensions,
+          hintsUsed,
+          hintTier: metadata.hintTier,
+          selfConfidence: metadata.selfConfidence,
+          durationMs: metadata.durationMs,
+          assessmentOverrides: metadata.assessment,
+          attemptedAt: now.toISOString(),
+        }, current.attemptsV4);
+        const competencyStates = applyEvidenceToStates(
+          current.competencyStates,
+          adaptiveAttempt.evidence,
+          current.attemptsV4,
+        );
         const errorTagCounts = { ...current.errorTagCounts };
         if (!correct) for (const tag of diagnosticTags) errorTagCounts[tag] = (errorTagCounts[tag] ?? 0) + 1;
         const recommendations = new Set(current.recommendedMicroquestIds);
@@ -476,6 +535,16 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
           discoveredSkillIds: [...new Set([...current.discoveredSkillIds, ...skillIds, ...newlyAvailable.map((skill) => skill.id)])],
           reviewSchedule,
           analyticsEvents: appendEvents(current, events),
+          competencyStates,
+          attemptsV4: [...current.attemptsV4, adaptiveAttempt],
+          recentBehaviorObservations: trimBehaviorObservations([
+            ...current.recentBehaviorObservations,
+            ...adaptiveAttempt.behaviorObservations,
+          ], now),
+          adaptiveState: {
+            ...current.adaptiveState,
+            lastTargetIds: [...new Set(adaptiveAttempt.evidence.map((item) => item.competencyId))],
+          },
         };
       });
     },

@@ -41,7 +41,7 @@ test('repeated error recommends a microquest and persists after closing and reop
   await page.getByRole('button', { name: 'Confirmar aplicação' }).click();
   await page.goto('/review');
   await expect(page.getByRole('link', { name: /Espelho de Vértices/ })).toBeVisible();
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v3') ?? '{}'));
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v4') ?? '{}'));
   expect(stored.skills['triangle-congruence'].mastery).toBe(0);
   expect(stored.skills['triangle-congruence'].correctAttempts).toBe(0);
   await page.close();
@@ -55,9 +55,43 @@ test('opening experiences never grants attempts or mastery', async ({ page }) =>
   for (const route of ['/encounter/crossroads-opv', '/proof/isosceles-base-angles?mode=training', '/lab/coordinates']) {
     await page.goto(route);
   }
-  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v3') ?? '{}'));
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v4') ?? '{}'));
   expect(stored.attempts).toHaveLength(0);
   expect(Object.values(stored.skills).every((profile) => (profile as { mastery: number }).mastery === 0)).toBe(true);
+  expect(Object.values(stored.competencyStates).every((state) => (state as { evidenceCount: number }).evidenceCount === 0)).toBe(true);
+});
+
+test('a due review is secondary and never replaces Continuar jornada', async ({ page }) => {
+  await resetProgress(page);
+  await page.evaluate(() => {
+    const key = 'geometria-rpg:progress:v4';
+    const stored = JSON.parse(localStorage.getItem(key) ?? '{}');
+    stored.reviewSchedule['triangle-congruence'] = {
+      conceptId: 'triangle-congruence', consecutiveCorrect: 2, recentErrors: 1, intervalDays: 1,
+      lastSeen: '2026-08-10T12:00:00.000Z', nextReview: '2026-08-11T12:00:00.000Z',
+    };
+    localStorage.setItem(key, JSON.stringify(stored));
+  });
+  await page.goto('/map');
+  await expect(page.getByRole('link', { name: /Continuar jornada.*A Ordem dos Vértices/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Revisão programada.*Espelho de Vértices/ })).toBeVisible();
+});
+
+test('V3 migrates to V4 without deleting the source backup', async ({ page }) => {
+  await page.goto('/map');
+  await page.evaluate(() => {
+    localStorage.clear();
+    localStorage.setItem('geometria-rpg:progress:v3', JSON.stringify({ version: 3, xp: 125, level: 2, attempts: [] }));
+  });
+  await page.reload();
+  const state = await page.evaluate(() => ({
+    source: localStorage.getItem('geometria-rpg:progress:v3'),
+    migrated: JSON.parse(localStorage.getItem('geometria-rpg:progress:v4') ?? '{}'),
+  }));
+  expect(state.source).not.toBeNull();
+  expect(state.migrated.version).toBe(4);
+  expect(state.migrated.xp).toBe(125);
+  expect(state.migrated.level).toBe(2);
 });
 
 test('crossroads encounter requires OPV, LAL and a corresponding consequence', async ({ page }) => {

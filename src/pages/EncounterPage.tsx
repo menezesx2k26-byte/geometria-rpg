@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams } from 'react-router-dom';
 import { GeometryFigure } from '../components/encounter/GeometryFigure';
 import { MissionRewardCard } from '../components/campaign/MissionRewardCard';
+import { CompetencyDebrief } from '../components/learning/CompetencyDebrief';
 import { FeedbackPanel, InventorySkillChip, QuestFrame, UnlockBanner } from '../components/rpg';
 import { findEncounter, skills } from '../data/bootstrap';
 import { validateApplication } from '../engine/encounterEngine';
@@ -97,6 +98,7 @@ function EncounterSession({ encounter }: { encounter: Encounter }) {
             : 'A aplicação foi registrada no seu histórico local.'}
         </UnlockBanner>
         <MissionRewardCard completionId={encounter.id} />
+        <CompetencyDebrief encounterId={encounter.id} />
         <article className="debrief-card">
           <span className="eyebrow">Resolução</span>
           <h2>O argumento completo</h2>

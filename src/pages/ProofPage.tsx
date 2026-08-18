@@ -3,6 +3,7 @@ import { useMemo, useState } from 'react';
 import { Link, useParams, useSearchParams } from 'react-router-dom';
 import { BossFrame, FeedbackPanel, UnlockBanner } from '../components/rpg';
 import { MissionRewardCard } from '../components/campaign/MissionRewardCard';
+import { CompetencyDebrief } from '../components/learning/CompetencyDebrief';
 import { findProof } from '../data/proofs';
 import { skills } from '../data/bootstrap';
 import {
@@ -134,6 +135,7 @@ function ProofSession({ proof, mode }: { proof: Proof; mode: 'training' | 'exam'
         skillIds: [practicedSkillId],
         masteryDimensions,
         hintsUsed: mode === 'training' ? 1 : 0,
+        hintTier: mode === 'training' ? 2 : undefined,
         position: `/proof/${proof.id}?mode=${mode}`,
       },
     );
@@ -158,6 +160,7 @@ function ProofSession({ proof, mode }: { proof: Proof; mode: 'training' | 'exam'
       <>
         <UnlockBanner title={proof.title}>Boss Proof concluída. {proof.unlockSkillIds.length ? 'Uma nova habilidade foi registrada.' : 'A cadeia lógica foi validada.'}</UnlockBanner>
         <MissionRewardCard completionId={`proof:${proof.id}`} />
+        <CompetencyDebrief encounterId={`proof:${proof.id}`} />
         <article className="debrief-card"><span className="eyebrow">Debrief</span><h2>Estrutura da prova</h2><p>{proof.debrief}</p></article>
         <div className="completion-actions"><Link className="primary-action" to="/training">Voltar ao treino</Link><Link className="secondary-action" to="/map">Abrir mapa</Link></div>
       </>
