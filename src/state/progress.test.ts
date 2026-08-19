@@ -1,5 +1,5 @@
 import { describe, expect, it } from 'vitest';
-import { getCampaignNodeState, getDueAdaptiveReview } from '../data/gameCampaign';
+import { campaignNodes, getCampaignNodeState, getDueAdaptiveReview } from '../data/gameCampaign';
 import { applyMissionCompletion, createInitialProgress, migrateProgress } from './progress';
 
 describe('game progress V4', () => {
@@ -140,23 +140,20 @@ describe('game progress V4', () => {
   it('advances the streak and unlocks the next mission after two meaningful completions', () => {
     const first = applyMissionCompletion(
       createInitialProgress(),
-      'ordered-correspondence',
-      [],
-      [],
+      'lesson:congruence-foundations',
+      ['triangle-congruence'],
+      ['codex-triangle-congruence'],
       new Date('2026-08-16T12:00:00.000Z'),
     );
     const second = applyMissionCompletion(
       first,
-      'crossroads-opv',
-      [],
-      [],
+      'ordered-correspondence',
+      ['triangle-congruence'],
+      ['codex-triangle-congruence'],
       new Date('2026-08-17T12:00:00.000Z'),
     );
-    const thirdNode = {
-      id: 'mission-mirror-review', chapterId: 'chapter-congruence', order: 3,
-      title: '', subtitle: '', narrativeLabel: '', type: 'review' as const,
-      route: '', completionId: 'microquest:correspondence-pairs', prerequisites: ['mission-opv-sas'], concepts: [], reward: { xp: 15 },
-    };
+    const thirdNode = campaignNodes.find((node) => node.id === 'lesson-opv-lal-foundations');
+    if (!thirdNode) throw new Error('Ponte didática esperada ausente.');
 
     expect(second.streak.current).toBe(2);
     expect(second.quests['quest-two-missions']?.completed).toBe(true);
