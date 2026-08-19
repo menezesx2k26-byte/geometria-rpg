@@ -1,0 +1,87 @@
+name: Verify Didactic Live V8
+
+on:
+  push:
+    branches:
+      - codex/v2-gamified-path
+
+permissions:
+  contents: write
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: 257bca437616da74ece1ce4bbaf0bd89
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+jobs:
+  verify-live:
+    if: ${{ !contains(github.event.head_commit.message, '[live-v8-status]') }}
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/v2-gamified-path
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Deploy audited build
+        run: npx wrangler@4 deploy
+      - name: Install Chromium
+        run: npx playwright install chromium
+      - name: Verify live didactic flow
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from '@playwright/test';
+          const base = 'https://geometria-rpg.menezesx2k26.workers.dev';
+          const expectedLessons = [
+            ['/lesson/congruence-foundations', 'Antes da Congruência'],
+            ['/lesson/opv-lal-foundations', 'OPV, LAL e Consequência'],
+            ['/lesson/proof-tools', 'Ferramentas do Espelho'],
+            ['/lesson/ala-foundations', 'A Ponte para ALA'],
+            ['/lesson/cevian-foundations', 'Cevianas sem Mistério'],
+            ['/lesson/parallelism-foundations', 'Gramática das Paralelas'],
+            ['/lesson/cartesian-foundations', 'Antes do Plano'],
+            ['/lesson/coordinate-bridge', 'Pontos que Viram Relações'],
+            ['/lesson/line-system-foundations', 'Reta e Sistema em Duas Línguas'],
+            ['/lesson/distance-modeling-foundations', 'Distância antes da Prova Métrica'],
+          ];
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+          const page = await context.newPage();
+          for (const [route, title] of expectedLessons) {
+            const response = await page.goto(base + route, { waitUntil: 'networkidle' });
+            if (!response?.ok()) throw new Error(`${route}: HTTP ${response?.status()}`);
+            const visible = await page.getByRole('heading', { name: title, exact: true }).isVisible();
+            if (!visible) throw new Error(`${route}: heading '${title}' not visible`);
+            const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+            if (overflow > 1) throw new Error(`${route}: horizontal overflow ${overflow}px`);
+          }
+          await page.goto(base + '/lesson/congruence-foundations', { waitUntil: 'networkidle' });
+          await page.getByRole('button', { name: 'Depende de como os triângulos estão desenhados', exact: true }).click();
+          const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v4') ?? '{}'));
+          if ((stored.attempts?.length ?? 0) !== 0) throw new Error('First-contact mistake created a legacy attempt');
+          if ((stored.attemptsV4?.length ?? 0) !== 0) throw new Error('First-contact mistake created a V4 attempt');
+          if (!Object.values(stored.competencyStates ?? {}).every((state) => state.evidenceCount === 0)) {
+            throw new Error('First-contact mistake created competency evidence');
+          }
+          await page.goto(base + '/map', { waitUntil: 'networkidle' });
+          const cta = page.getByRole('link', { name: /Continuar jornada.*Antes da Congruência/ });
+          if (!(await cta.isVisible())) throw new Error('Fresh map does not start with didactic bridge');
+          await browser.close();
+          console.log('LIVE_DIDACTIC_V8_OK');
+          NODE
+      - name: Record live verification status
+        shell: bash
+        run: |
+          printf 'status=success\nsource_commit=%s\nverified_at=%s\nworker=https://geometria-rpg.menezesx2k26.workers.dev\nlessons=10\n' "${GITHUB_SHA}" "$(date -u +%Y-%m-%dT%H:%M:%SZ)" > .didactic-v8-live-status.txt
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+          git add .didactic-v8-live-status.txt
+          git commit -m 'ci: record didactic V8 live verification [live-v8-status]'
+          git push origin HEAD:codex/v2-gamified-path
