@@ -1,11 +1,10 @@
 name: Run Semantic Answer Audit
 
 on:
-  push:
+  pull_request:
     branches:
       - codex/v2-gamified-path
-    paths:
-      - '.semantic-audit-runner-trigger'
+    types: [opened, synchronize, reopened]
 
 permissions:
   contents: write
