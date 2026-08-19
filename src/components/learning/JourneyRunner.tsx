@@ -5,6 +5,7 @@ import type { JourneyStage } from '../../data/interactiveJourneys';
 import { useProgress } from '../../state/progress';
 import {
   acceptedJourneyOptionIds,
+  freeTextAnswerPlaceholder,
   isAcceptedOption,
   supportsFreeTextAnswer,
   validateFreeTextAnswer,
@@ -195,7 +196,7 @@ export function JourneyRunner({
                 type="text"
                 value={freeAnswer}
                 disabled={feedback?.state === 'correct'}
-                placeholder="Ex.: 2x+2y+2=0"
+                placeholder={freeTextAnswerPlaceholder('journey', stage.id)}
                 autoComplete="off"
                 spellCheck={false}
                 onChange={(event) => { setFreeAnswer(event.target.value); setSelectedId(undefined); setFeedback(undefined); }}
