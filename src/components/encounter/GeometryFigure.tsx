@@ -7,16 +7,19 @@ interface GeometryFigureProps {
   onToggle: (id: string) => void;
   showPalette?: boolean;
   readOnly?: boolean;
+  visibleObjectIds?: string[];
+  selectionPresentation?: 'sequence' | 'pairs';
+  showCorrespondenceMarks?: boolean;
 }
 
 function ObjectButton({
   object,
-  order,
+  badge,
   selected,
   onToggle,
 }: {
   object: GeometryObject;
-  order?: number | undefined;
+  badge?: number | undefined;
   selected: boolean;
   onToggle: () => void;
 }) {
@@ -27,7 +30,7 @@ function ObjectButton({
       aria-pressed={selected}
       onClick={onToggle}
     >
-      {order ? <span aria-hidden="true">{order}</span> : null}
+      {badge ? <span aria-hidden="true">{badge}</span> : null}
       {object.label}
     </button>
   );
@@ -41,15 +44,27 @@ function activationHandler(onActivate: () => void) {
   };
 }
 
-export function GeometryFigure({ encounter, selectedObjectIds, onToggle, showPalette = true, readOnly = false }: GeometryFigureProps) {
+export function GeometryFigure({
+  encounter,
+  selectedObjectIds,
+  onToggle,
+  showPalette = true,
+  readOnly = false,
+  visibleObjectIds,
+  selectionPresentation = 'sequence',
+  showCorrespondenceMarks = true,
+}: GeometryFigureProps) {
   const figureId = useId();
   const titleId = `${figureId}-title`;
   const descId = `${figureId}-desc`;
   const selectableIds = new Set(encounter.applicationRules.flatMap((rule) => rule.objectIds));
-  const selectableObjects = encounter.objects.filter((object) => selectableIds.has(object.id));
+  const visibleIds = visibleObjectIds ? new Set(visibleObjectIds) : undefined;
+  const selectableObjects = encounter.objects.filter(
+    (object) => selectableIds.has(object.id) && (!visibleIds || visibleIds.has(object.id)),
+  );
 
   const toggleTriangle = (id: string) => {
-    if (!readOnly && selectableIds.has(id)) onToggle(id);
+    if (!readOnly && selectableIds.has(id) && (!visibleIds || visibleIds.has(id))) onToggle(id);
   };
 
   return (
@@ -100,18 +115,22 @@ export function GeometryFigure({ encounter, selectedObjectIds, onToggle, showPal
         </svg>
       ) : (
         <svg viewBox="0 0 640 430" preserveAspectRatio="xMidYMid meet" aria-labelledby={`${titleId} ${descId}`} role="img">
-          <title id={titleId}>Triângulos congruentes ABC e DEF</title>
-          <desc id={descId}>A corresponde a D, B a E e C a F. Marcas diferentes distinguem cada par de lados correspondentes.</desc>
+          <title id={titleId}>Triângulos ABC e DEF</title>
+          <desc id={descId}>Dois triângulos usados para interpretar a correspondência declarada pela notação de congruência.</desc>
 
           <polygon points="60,340 170,70 280,340" />
           <polygon points="360,340 470,70 580,340" />
 
-          {/* AB ↔ DE: uma marca. */}
-          <path d="M109 221 l12 5 M409 221 l12 5" className="tick-mark" />
-          {/* AC ↔ DF: duas marcas. */}
-          <path d="M219 216 l12 -5 M226 230 l12 -5 M519 216 l12 -5 M526 230 l12 -5" className="tick-mark" />
-          {/* BC ↔ EF: três marcas. */}
-          <path d="M151 331 v18 M170 331 v18 M189 331 v18 M451 331 v18 M470 331 v18 M489 331 v18" className="tick-mark" />
+          {showCorrespondenceMarks ? (
+            <>
+              {/* AB ↔ DE: uma marca. */}
+              <path d="M109 221 l12 5 M409 221 l12 5" className="tick-mark" />
+              {/* AC ↔ DF: duas marcas. */}
+              <path d="M219 216 l12 -5 M226 230 l12 -5 M519 216 l12 -5 M526 230 l12 -5" className="tick-mark" />
+              {/* BC ↔ EF: três marcas. */}
+              <path d="M151 331 v18 M170 331 v18 M189 331 v18 M451 331 v18 M470 331 v18 M489 331 v18" className="tick-mark" />
+            </>
+          ) : null}
 
           {[
             ['A', 170, 52], ['B', 45, 382], ['C', 295, 382], ['D', 470, 52], ['E', 345, 382], ['F', 595, 382],
@@ -133,12 +152,17 @@ export function GeometryFigure({ encounter, selectedObjectIds, onToggle, showPal
         <div className="figure-object-palette" aria-label="Objetos selecionáveis">
           {selectableObjects.map((object) => {
             const selectedIndex = selectedObjectIds.indexOf(object.id);
+            const badge = selectedIndex >= 0
+              ? selectionPresentation === 'pairs'
+                ? Math.floor(selectedIndex / 2) + 1
+                : selectedIndex + 1
+              : undefined;
             return (
               <ObjectButton
                 key={object.id}
                 object={object}
                 selected={selectedIndex >= 0}
-                order={selectedIndex >= 0 ? selectedIndex + 1 : undefined}
+                badge={badge}
                 onToggle={() => { if (!readOnly) onToggle(object.id); }}
               />
             );
