@@ -3,7 +3,13 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { JourneyStage } from '../../data/interactiveJourneys';
 import { useProgress } from '../../state/progress';
-import { acceptedJourneyOptionIds, isAcceptedOption } from '../../engine/answerAcceptance';
+import {
+  acceptedJourneyOptionIds,
+  freeTextAnswerPlaceholder,
+  isAcceptedOption,
+  supportsFreeTextAnswer,
+  validateFreeTextAnswer,
+} from '../../engine/answerAcceptance';
 import { FeedbackPanel, UnlockBanner } from '../rpg';
 import { MissionRewardCard } from '../campaign/MissionRewardCard';
 import { CompetencyDebrief } from './CompetencyDebrief';
@@ -43,6 +49,7 @@ export function JourneyRunner({
   const effectiveBackLabel = focusedStage ? 'Voltar ao diagnóstico' : backLabel;
   const [stageIndex, setStageIndex] = useState(0);
   const [selectedId, setSelectedId] = useState<string>();
+  const [freeAnswer, setFreeAnswer] = useState('');
   const [feedback, setFeedback] = useState<{ state: 'correct' | 'incorrect'; message: string }>();
   const [hintUsed, setHintUsed] = useState(false);
   const [selfConfidence, setSelfConfidence] = useState<number>();
@@ -52,16 +59,25 @@ export function JourneyRunner({
   const allSkillIds = useMemo(() => [...new Set(activeStages.flatMap((item) => item.skillIds))], [activeStages]);
 
   if (!stage) return null;
+  const acceptsFreeText = supportsFreeTextAnswer('journey', stage.id);
+  const hasResponse = Boolean(selectedId || (acceptsFreeText && freeAnswer.trim()));
 
   const verify = () => {
-    if (!selectedId || feedback?.state === 'correct') return;
-    const selected = stage.options.find((item) => item.id === selectedId);
-    if (!selected) return;
-    const correct = isAcceptedOption(selectedId, stage.correctOptionId, acceptedJourneyOptionIds(stage.id));
+    if (!hasResponse || feedback?.state === 'correct') return;
+    const typed = acceptsFreeText ? freeAnswer.trim() : '';
+    const selected = selectedId ? stage.options.find((item) => item.id === selectedId) : undefined;
+    if (!typed && !selected) return;
+
+    const textResult = typed ? validateFreeTextAnswer('journey', stage.id, typed) : undefined;
+    const correct = textResult
+      ? textResult.correct
+      : isAcceptedOption(selectedId, stage.correctOptionId, acceptedJourneyOptionIds(stage.id));
+    const response = typed ? `free:${typed}` : selectedId ?? '';
+
     recordAttempt(
       effectiveJourneyId,
       stage.id,
-      [selectedId],
+      [response],
       correct,
       correct ? [] : [stage.diagnosticTag],
       {
@@ -75,8 +91,18 @@ export function JourneyRunner({
     );
     setFeedback({
       state: correct ? 'correct' : 'incorrect',
-      message: correct ? `${selected.feedback} ${stage.successMessage}` : selected.feedback,
+      message: textResult
+        ? correct ? `${textResult.message} ${stage.successMessage}` : textResult.message
+        : correct ? `${selected?.feedback ?? ''} ${stage.successMessage}` : selected?.feedback ?? 'Resposta ainda não validada.',
     });
+  };
+
+  const clearResponse = () => {
+    setSelectedId(undefined);
+    setFreeAnswer('');
+    setFeedback(undefined);
+    setHintUsed(false);
+    setSelfConfidence(undefined);
   };
 
   const advance = () => {
@@ -92,10 +118,7 @@ export function JourneyRunner({
       return;
     }
     setStageIndex((current) => current + 1);
-    setSelectedId(undefined);
-    setFeedback(undefined);
-    setHintUsed(false);
-    setSelfConfidence(undefined);
+    clearResponse();
     window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   };
 
@@ -113,7 +136,7 @@ export function JourneyRunner({
           </section>
           <div className="completion-actions">
             <Link className="primary-action" to={effectiveBackTo}>{effectiveBackLabel}</Link>
-            <button type="button" className="secondary-action" onClick={() => { setStageIndex(0); setCompleted(false); setSelectedId(undefined); setFeedback(undefined); setHintUsed(false); setSelfConfidence(undefined); }}><RotateCcw size={16} /> Refazer sem dicas</button>
+            <button type="button" className="secondary-action" onClick={() => { setStageIndex(0); setCompleted(false); clearResponse(); }}><RotateCcw size={16} /> Refazer sem dicas</button>
           </div>
         </div>
       </section>
@@ -160,12 +183,27 @@ export function JourneyRunner({
                 className={selectedId === item.id ? 'is-selected' : ''}
                 aria-pressed={selectedId === item.id}
                 disabled={feedback?.state === 'correct'}
-                onClick={() => { setSelectedId(item.id); setFeedback(undefined); }}
+                onClick={() => { setSelectedId(item.id); setFreeAnswer(''); setFeedback(undefined); }}
               >
                 {item.label}
               </button>
             ))}
           </div>
+          {acceptsFreeText && (
+            <label className="semantic-answer-field">
+              <span>Ou escreva uma forma equivalente</span>
+              <input
+                type="text"
+                value={freeAnswer}
+                disabled={feedback?.state === 'correct'}
+                placeholder={freeTextAnswerPlaceholder('journey', stage.id)}
+                autoComplete="off"
+                spellCheck={false}
+                onChange={(event) => { setFreeAnswer(event.target.value); setSelectedId(undefined); setFeedback(undefined); }}
+              />
+              <small>O sistema valida a relação matemática, não a string exata.</small>
+            </label>
+          )}
           <fieldset className="confidence-check">
             <legend>Antes de verificar, quão seguro você está? <small>opcional</small></legend>
             <div>
@@ -190,7 +228,7 @@ export function JourneyRunner({
           {feedback && <FeedbackPanel state={feedback.state}>{feedback.message}</FeedbackPanel>}
           <div className="journey-actions">
             <button type="button" className="text-action" disabled={hintUsed || feedback?.state === 'correct'} onClick={() => setHintUsed(true)}><Lightbulb size={16} /> Pedir pista</button>
-            <button type="button" className="primary-action" disabled={!selectedId} onClick={feedback?.state === 'correct' ? advance : verify}>
+            <button type="button" className="primary-action" disabled={!hasResponse} onClick={feedback?.state === 'correct' ? advance : verify}>
               {feedback?.state === 'correct' ? <>{stageIndex === activeStages.length - 1 ? 'Concluir rota' : 'Registrar e avançar'} <ArrowRight size={16} /></> : 'Sustentar resposta'}
             </button>
           </div>

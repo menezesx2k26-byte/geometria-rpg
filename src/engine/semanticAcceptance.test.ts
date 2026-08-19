@@ -21,7 +21,7 @@ describe('mathematically equivalent answer paths', () => {
       .toMatchObject({ correct: false, kind: 'wrong-order' });
   });
 
-  it('accepts generic Definição when it names the same point-midpoint definition', () => {
+  it('accepts generic Definição when it names the same specific definition', () => {
     const proof = proofs.find((item) => item.id === 'isosceles-cevian');
     const step = proof?.steps.find((item) => item.id === 'midpoint-d');
     expect(proof).toBeDefined();
@@ -29,5 +29,29 @@ describe('mathematically equivalent answer paths', () => {
     if (!proof || !step) return;
     expect(validateProofStep(proof, step, ['base-parts'], { involvedObjects: [], justification: 'definition', answerIds: [] }))
       .toMatchObject({ correct: true, kind: 'accepted' });
+  });
+
+  it('accepts any topological order of independent proof premises', () => {
+    const proof = proofs.find((item) => item.id === 'isosceles-cevian');
+    const original = proof?.steps.find((item) => item.id === 'linear-pair');
+    expect(proof).toBeDefined();
+    expect(original).toBeDefined();
+    if (!proof || !original) return;
+    const step = { ...original, acceptedAlternatives: [] };
+    expect(validateProofStep(proof, step, ['angles-at-d', 'collinear-bdc'], {
+      involvedObjects: [], answerIds: ['collinear-bdc', 'angles-at-d', 'linear-pair'],
+    })).toMatchObject({ correct: true, kind: 'accepted' });
+  });
+
+  it('still rejects a proof conclusion placed before its required premises', () => {
+    const proof = proofs.find((item) => item.id === 'isosceles-cevian');
+    const original = proof?.steps.find((item) => item.id === 'linear-pair');
+    expect(proof).toBeDefined();
+    expect(original).toBeDefined();
+    if (!proof || !original) return;
+    const step = { ...original, acceptedAlternatives: [] };
+    expect(validateProofStep(proof, step, ['angles-at-d', 'collinear-bdc'], {
+      involvedObjects: [], answerIds: ['linear-pair', 'angles-at-d', 'collinear-bdc'],
+    })).toMatchObject({ correct: false, kind: 'answer' });
   });
 });

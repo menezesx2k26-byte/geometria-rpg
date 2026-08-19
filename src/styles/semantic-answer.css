@@ -1,0 +1,49 @@
+.semantic-answer-field {
+  display: grid;
+  gap: 7px;
+  margin: 14px 0;
+  padding: 13px;
+  border: 1px solid var(--line);
+  border-radius: 14px;
+  background: rgba(7, 27, 38, .48);
+}
+
+.semantic-answer-field > span {
+  color: var(--text);
+  font-size: .78rem;
+  font-weight: 800;
+}
+
+.semantic-answer-field input {
+  width: 100%;
+  min-height: 46px;
+  border: 1px solid rgba(121, 220, 255, .34);
+  border-radius: 10px;
+  padding: 10px 12px;
+  color: var(--text);
+  background: rgba(4, 20, 28, .78);
+  font: inherit;
+  font-variant-numeric: tabular-nums;
+}
+
+.semantic-answer-field input:focus-visible {
+  outline: 3px solid var(--focus);
+  outline-offset: 2px;
+  border-color: var(--focus);
+}
+
+.semantic-answer-field input:disabled {
+  opacity: .72;
+  cursor: not-allowed;
+}
+
+.semantic-answer-field small {
+  color: var(--muted);
+  font-size: .7rem;
+  line-height: 1.45;
+}
+
+@media (max-width: 520px) {
+  .semantic-answer-field { padding: 11px; }
+  .semantic-answer-field input { font-size: 16px; }
+}
