@@ -57,8 +57,9 @@ jobs:
           for (const [route, title] of expectedLessons) {
             const response = await page.goto(base + route, { waitUntil: 'networkidle' });
             if (!response?.ok()) throw new Error(`${route}: HTTP ${response?.status()}`);
-            const visible = await page.getByRole('heading', { name: title, exact: true }).isVisible();
-            if (!visible) throw new Error(`${route}: heading '${title}' not visible`);
+            if (!(await page.getByRole('heading', { name: title, exact: true }).isVisible())) {
+              throw new Error(`${route}: heading '${title}' not visible`);
+            }
             const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
             if (overflow > 1) throw new Error(`${route}: horizontal overflow ${overflow}px`);
           }
@@ -71,8 +72,9 @@ jobs:
             throw new Error('First-contact mistake created competency evidence');
           }
           await page.goto(base + '/map', { waitUntil: 'networkidle' });
-          const cta = page.getByRole('link', { name: /Continuar jornada.*Antes da Congruência/ });
-          if (!(await cta.isVisible())) throw new Error('Fresh map does not start with didactic bridge');
+          if (!(await page.getByRole('link', { name: /Continuar jornada.*Antes da Congruência/ }).isVisible())) {
+            throw new Error('Fresh map does not start with didactic bridge');
+          }
           await browser.close();
           console.log('LIVE_DIDACTIC_V8_OK');
           NODE
@@ -85,3 +87,5 @@ jobs:
           git add .didactic-v8-live-status.txt
           git commit -m 'ci: record didactic V8 live verification [live-v8-status]'
           git push origin HEAD:codex/v2-gamified-path
+
+# trigger: live-v8
