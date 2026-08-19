@@ -1,6 +1,7 @@
 import type { CampaignNode, Skill } from '../types/domain';
 import { didacticLessons } from './didacticLessons';
 
+// Guardrail temporal: nenhuma avaliação independente pode anteceder apresentação + prática guiada.
 export interface DidacticNodeProfile {
   nodeId: string;
   introduces?: string[];
