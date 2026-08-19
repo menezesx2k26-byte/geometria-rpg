@@ -1,8 +1,0 @@
-status=success
-npm_ci=0
-lint=0
-unit=0
-build=0
-playwright_install=0
-e2e=0
-source_commit=1be3924896cc48189eb0015fa893c08a4432489c
