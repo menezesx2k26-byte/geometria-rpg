@@ -1,0 +1,5 @@
+status=success
+source_commit=38161aa1f3b6911b2754c64116ca628d358267bf
+verified_at=2026-08-19T17:08:52Z
+worker=https://geometria-rpg.menezesx2k26.workers.dev
+lessons=10
