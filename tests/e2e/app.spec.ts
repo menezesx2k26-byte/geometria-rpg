@@ -4,6 +4,17 @@ import { expect, test, type Page } from '@playwright/test';
 async function resetProgress(page: Page) {
   await page.goto('/review');
   await page.getByRole('button', { name: /Reiniciar progresso/ }).click();
+  await page.getByRole('button', { name: 'Sim, reiniciar', exact: true }).click();
+  await page.waitForFunction(() => {
+    const raw = localStorage.getItem('geometria-rpg:progress:v4');
+    if (!raw) return false;
+    try {
+      const stored = JSON.parse(raw);
+      return Array.isArray(stored.attempts) && stored.attempts.length === 0;
+    } catch {
+      return false;
+    }
+  });
 }
 
 async function applyEncounterRule(page: Page, skill: string, objects: string[]) {
@@ -66,6 +77,7 @@ test('a due review is secondary and never replaces Continuar jornada', async ({ 
   await page.evaluate(() => {
     const key = 'geometria-rpg:progress:v4';
     const stored = JSON.parse(localStorage.getItem(key) ?? '{}');
+    stored.reviewSchedule ??= {};
     stored.reviewSchedule['triangle-congruence'] = {
       conceptId: 'triangle-congruence', consecutiveCorrect: 2, recentErrors: 1, intervalDays: 1,
       lastSeen: '2026-08-10T12:00:00.000Z', nextReview: '2026-08-11T12:00:00.000Z',
@@ -237,6 +249,9 @@ for (const width of [360, 390, 412]) {
 test('ordered correspondence labels remain separated on narrow mobile screens', async ({ page }) => {
   await page.setViewportSize({ width: 360, height: 844 });
   await page.goto('/mission/ordered-correspondence');
+  await expect(page.locator('.interactive-figure svg')).toBeVisible();
+  await expect(page.locator('.interactive-figure svg text').filter({ hasText: /^C$/ })).toBeVisible();
+  await expect(page.locator('.interactive-figure svg text').filter({ hasText: /^E$/ })).toBeVisible();
   const labels = page.locator('.interactive-figure svg text');
   const positions = await labels.evaluateAll((elements) => Object.fromEntries(elements.map((element) => {
     const rect = element.getBoundingClientRect();
