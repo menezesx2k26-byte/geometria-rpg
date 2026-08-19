@@ -1,5 +1,6 @@
 import type { CampaignNode, Skill } from '../types/domain';
 import { didacticLessons } from './didacticLessons';
+import { checksForDidacticLesson } from './didacticPracticeChecks';
 
 // Guardrail temporal: nenhuma avaliação independente pode anteceder apresentação + prática guiada.
 export interface DidacticNodeProfile {
@@ -46,6 +47,12 @@ function unique(values: string[] | undefined) {
   return [...new Set(values ?? [])];
 }
 
+function sameSet(left: string[], right: string[]) {
+  if (left.length !== right.length) return false;
+  const rightSet = new Set(right);
+  return left.every((value) => rightSet.has(value));
+}
+
 export function validateDidacticSequence(nodes: CampaignNode[], skills: Skill[]) {
   const errors: string[] = [];
   const skillById = new Map(skills.map((skill) => [skill.id, skill]));
@@ -63,9 +70,41 @@ export function validateDidacticSequence(nodes: CampaignNode[], skills: Skill[])
   }
 
   for (const profile of didacticNodeProfiles) {
-    if (!nodeById.has(profile.nodeId)) errors.push(`${profile.nodeId}: perfil didático aponta para missão inexistente.`);
+    const node = nodeById.get(profile.nodeId);
+    if (!node) errors.push(`${profile.nodeId}: perfil didático aponta para missão inexistente.`);
     for (const skillId of [...unique(profile.introduces), ...unique(profile.practices), ...unique(profile.assesses)]) {
       if (!skillById.has(skillId)) errors.push(`${profile.nodeId}: skill didática inexistente ${skillId}.`);
+    }
+
+    if (node?.route.startsWith('/lesson/')) {
+      const lesson = lessonByCompletion.get(node.completionId);
+      if (!lesson) continue;
+      const introduces = unique(profile.introduces);
+      const practices = unique(profile.practices);
+      if (!sameSet(unique(lesson.introduces), introduces)) {
+        errors.push(`${node.id}: metadata de introdução diverge do conteúdo da microlição.`);
+      }
+      if (!sameSet(unique(lesson.guidedPractice), practices)) {
+        errors.push(`${node.id}: metadata de prática guiada diverge do conteúdo da microlição.`);
+      }
+
+      const checks = checksForDidacticLesson(lesson);
+      const checkIds = checks.map((check) => check.id);
+      if (new Set(checkIds).size !== checkIds.length) errors.push(`${node.id}: checks guiados com IDs duplicados.`);
+      const coveredSkills = new Set<string>();
+      for (const check of checks) {
+        if (!check.skillIds.length) errors.push(`${node.id}/${check.id}: check guiado sem skill vinculada.`);
+        for (const skillId of check.skillIds) {
+          coveredSkills.add(skillId);
+          if (!skillById.has(skillId)) errors.push(`${node.id}/${check.id}: skill inexistente ${skillId}.`);
+          if (!practices.includes(skillId)) errors.push(`${node.id}/${check.id}: cobre ${skillId}, mas a skill não está declarada como prática guiada.`);
+        }
+      }
+      for (const skillId of practices) {
+        if (!coveredSkills.has(skillId)) {
+          errors.push(`${node.id}: declara prática guiada de ${skillId} sem check concreto.`);
+        }
+      }
     }
   }
 
