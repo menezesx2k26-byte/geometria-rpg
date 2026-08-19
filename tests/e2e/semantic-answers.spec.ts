@@ -33,7 +33,27 @@ test('segment orientation FD is accepted as the same segment as DF', async ({ pa
   await expect(page.getByText(/FD nomeia o mesmo segmento/)).toBeVisible();
 });
 
-test('Q15 accepts a synchronized equivalent triangle notation', async ({ page }) => {
+test('free-form equivalent line equation is accepted', async ({ page }) => {
+  await resetProgress(page);
+  await page.goto('/lab/line-forge?focus=generic-point-line');
+  await page.locator('.semantic-answer-field input').fill('2x+2y+2=0');
+  await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+  await expect(page.getByText(/Forma matematicamente equivalente aceita/)).toBeVisible();
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v4') ?? '{}'));
+  expect(stored.attempts.at(-1)?.correct).toBe(true);
+});
+
+test('free-form wrong line equation is still rejected', async ({ page }) => {
+  await resetProgress(page);
+  await page.goto('/lab/line-forge?focus=generic-point-line');
+  await page.locator('.semantic-answer-field input').fill('x+y-1=0');
+  await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+  await expect(page.getByText(/não é equivalente/)).toBeVisible();
+  const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v4') ?? '{}'));
+  expect(stored.attempts.at(-1)?.correct).toBe(false);
+});
+
+test('Q15 accepts a synchronized triangle notation that is not a button option', async ({ page }) => {
   await resetProgress(page);
   await page.goto('/encounter/official-q15');
   for (const choice of ['∠BCA ≅ ∠DCE por OPV', 'ALA']) {
@@ -41,7 +61,7 @@ test('Q15 accepts a synchronized equivalent triangle notation', async ({ page })
     await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
     await page.getByRole('button', { name: 'Registrar e avançar', exact: true }).click();
   }
-  await page.getByRole('button', { name: '△BAC ≅ △DEC', exact: true }).click();
+  await page.locator('.semantic-answer-field input').fill('△ABC ≅ △EDC');
   await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
-  await expect(page.getByText(/permutações sincronizadas/)).toBeVisible();
+  await expect(page.getByText(/Forma matematicamente equivalente aceita/)).toBeVisible();
 });
