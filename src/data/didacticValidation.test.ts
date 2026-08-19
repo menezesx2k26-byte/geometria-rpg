@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { skills } from './bootstrap';
 import { didacticLessons } from './didacticLessons';
+import { checksForDidacticLesson } from './didacticPracticeChecks';
 import { didacticCoverageReport, validateDidacticSequence } from './didacticValidation';
 import { campaignNodes, validateGameCampaign } from './gameCampaign';
 
@@ -17,9 +18,22 @@ describe('didactic campaign sequence', () => {
     for (const node of lessonNodes) expect(completionIds.has(node.completionId)).toBe(true);
     for (const lesson of didacticLessons) {
       expect(lesson.sections.length).toBeGreaterThan(0);
-      expect(lesson.checks.length).toBeGreaterThan(0);
+      expect(checksForDidacticLesson(lesson).length).toBeGreaterThan(0);
       expect(lesson.introduces.length).toBeGreaterThan(0);
       expect(lesson.guidedPractice.length).toBeGreaterThan(0);
+    }
+  });
+
+  it('requires a concrete guided check for every practiced skill', () => {
+    for (const lesson of didacticLessons) {
+      const checks = checksForDidacticLesson(lesson);
+      const covered = new Set(checks.flatMap((check) => check.skillIds));
+      for (const skillId of lesson.guidedPractice) {
+        expect(covered.has(skillId), `${lesson.id} must concretely practice ${skillId}`).toBe(true);
+      }
+      for (const check of checks) {
+        expect(check.skillIds.length, `${lesson.id}/${check.id} must have skill coverage`).toBeGreaterThan(0);
+      }
     }
   });
 
@@ -49,3 +63,5 @@ describe('didactic campaign sequence', () => {
     }
   });
 });
+
+// This suite is the CI guardrail for declared-vs-real guided practice.

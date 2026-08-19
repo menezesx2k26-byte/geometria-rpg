@@ -2,6 +2,7 @@ import { useMemo, useState } from 'react';
 import { Link, useNavigate, useParams } from 'react-router-dom';
 import { skills } from '../data/bootstrap';
 import { findDidacticLesson } from '../data/didacticLessons';
+import { checksForDidacticLesson } from '../data/didacticPracticeChecks';
 import { useProgress } from '../state/progress';
 
 export function DidacticLessonPage() {
@@ -10,12 +11,13 @@ export function DidacticLessonPage() {
   const navigate = useNavigate();
   const { progress, completeEncounter } = useProgress();
   const [answers, setAnswers] = useState<Record<string, string>>({});
+  const checks = useMemo(() => lesson ? checksForDidacticLesson(lesson) : [], [lesson]);
 
   const completed = Boolean(lesson && progress.completedEncounterIds.includes(lesson.completionId));
   const allCorrect = useMemo(() => {
     if (!lesson) return false;
-    return lesson.checks.every((check) => answers[check.id] === check.correctOptionId);
-  }, [answers, lesson]);
+    return checks.every((check) => answers[check.id] === check.correctOptionId);
+  }, [answers, checks, lesson]);
 
   if (!lesson) {
     return (
@@ -79,7 +81,7 @@ export function DidacticLessonPage() {
         <p>Você pode tentar novamente sem penalidade. O objetivo aqui é construir a ideia, não medir desempenho.</p>
 
         <div className="lesson-stack">
-          {lesson.checks.map((check, checkIndex) => {
+          {checks.map((check, checkIndex) => {
             const selected = answers[check.id];
             const selectedOption = check.options.find((item) => item.id === selected);
             const isCorrect = selected === check.correctOptionId;
