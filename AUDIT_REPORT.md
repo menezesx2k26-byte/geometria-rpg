@@ -64,9 +64,9 @@ A auditoria cobre arquitetura de navegação, integridade de conteúdo, estado p
 - Reset de progresso exige confirmação explícita.
 - Terminologia visível foi uniformizada em português.
 
-## QA obrigatório antes da integração
+## QA final
 
-A branch só deve ser integrada após:
+A matriz completa foi executada em ambiente limpo com:
 
 1. `npm ci`
 2. `npm run lint`
@@ -75,7 +75,7 @@ A branch só deve ser integrada após:
 5. instalação do Chromium do Playwright
 6. `npm run test:e2e`
 
-Os E2E cobrem os fluxos matemáticos principais, persistência/migração, ausência de overflow em mobile, separação dos rótulos C/E, refresh de rotas diretas, carregamento de assets e violações sérias/críticas de acessibilidade.
+Resultado final: **todos os gates passaram com exit code 0**, inclusive E2E em Chromium, cenários mobile 360/390/412 px, separação C/E, rotas diretas, carregamento de assets, persistência/migração e auditoria Axe sem violações sérias/críticas nas páginas cobertas.
 
 ## Deploy
 
