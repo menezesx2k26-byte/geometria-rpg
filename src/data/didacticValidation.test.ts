@@ -63,3 +63,5 @@ describe('didactic campaign sequence', () => {
     }
   });
 });
+
+// This suite is the CI guardrail for declared-vs-real guided practice.
