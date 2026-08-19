@@ -66,8 +66,11 @@ type Validator = (input: string) => boolean;
 const validators = new Map<string, Validator>();
 const key = (scope: FreeTextScope, id: string) => `${scope}:${id}`;
 const register = (scope: FreeTextScope, id: string, validator: Validator) => validators.set(key(scope, id), validator);
+const hasExplicitRelation = (input: string) => {
+  const normalized = normalizeMathText(input);
+  return normalized.includes('~') || normalized.includes('=') || normalized.includes('congruente') || normalized.includes('igual');
+};
 
-// Correspondência: orientação do segmento/ângulo e permutações sincronizadas são equivalentes.
 register('microquest', 'correspondence-pairs', (input) => segmentEquivalent(input, 'D', 'F'));
 register('microquest', 'included-angle', (input) => angleEquivalent(input, 'B'));
 register('microquest', 'cevian-classification', (input) => keywordEquivalent(input, ['mediana', 'median']));
@@ -76,39 +79,53 @@ register('correspondence-lesson', 'guided-c-f', (input) => keywordEquivalent(inp
 register('correspondence-lesson', 'guided-side', (input) => segmentEquivalent(input, 'D', 'E'));
 register('correspondence-lesson', 'guided-angle', (input) => angleEquivalent(input, 'F'));
 
-// Questão oficial 15: aceita notação equivalente, cálculo equivalente e razão simplificada/não simplificada.
-register('official-q15', 'q15-opv', (input) => angleCongruenceEquivalent(input, 'BCA', 'DCE'));
+register('official-q15', 'q15-opv', (input) => hasExplicitRelation(input) && angleCongruenceEquivalent(input, 'BCA', 'DCE'));
 register('official-q15', 'q15-asa', (input) => keywordEquivalent(input, ['ala', 'angulo-lado-angulo', 'ângulo-lado-ângulo', 'anguloladoangulo']));
-register('official-q15', 'q15-order', (input) => triangleCorrespondenceEquivalent(input, 'CBA', 'CDE'));
+register('official-q15', 'q15-order', (input) => hasExplicitRelation(input) && triangleCorrespondenceEquivalent(input, 'CBA', 'CDE'));
 register('official-q15', 'q15-x', (input) => scalarEquivalent(input, 14, 'x'));
 register('official-q15', 'q15-y', (input) => scalarEquivalent(input, 10, 'y'));
 register('official-q15', 'q15-perimeter', (input) => scalarEquivalent(input, 1));
 
-// Jornadas analíticas: somente etapas em que a equivalência pode ser decidida deterministicamente.
 register('journey', 'midpoint-bc', (input) => pointEquivalent(input, { x: -1.5, y: 0.5 }));
 register('journey', 'generic-point-line', (input) => lineEquivalent(input, { a: 1, b: 1, c: 1 }));
 register('journey', 'solve-angle-x', (input) => scalarEquivalent(input, 15, 'x'));
 register('journey', 'median-boss', (input) => lineEquivalent(input, { a: 3, b: 7, c: 1 }));
 register('journey', 'solve-system', (input) => {
-  const normalized = normalizeMathText(input);
   if (pointEquivalent(input, { x: 2 / 3, y: 2 / 3 })) return true;
   const pointMatch = input.match(/\([^()]+\)/);
-  return Boolean(pointMatch && pointEquivalent(pointMatch[0], { x: 2 / 3, y: 2 / 3 }) && (normalized.includes('2/3') || normalized.includes('0.666')));
+  return Boolean(pointMatch && pointEquivalent(pointMatch[0], { x: 2 / 3, y: 2 / 3 }));
 });
-register('journey', 'solve-angle-x', (input) => scalarEquivalent(input, 15, 'x'));
+
+const placeholders: Readonly<Record<string, string>> = {
+  'journey:midpoint-bc': 'Ex.: M=(-3/2; 1/2)',
+  'journey:generic-point-line': 'Ex.: y=-x-1',
+  'journey:solve-angle-x': 'Ex.: x=30/2',
+  'journey:median-boss': 'Ex.: 6x+14y+2=0',
+  'journey:solve-system': 'Ex.: P=(2/3; 2/3)',
+  'official-q15:q15-opv': 'Ex.: ∠ACB ≅ ∠ECD',
+  'official-q15:q15-asa': 'Ex.: Ângulo-Lado-Ângulo',
+  'official-q15:q15-order': 'Ex.: △ABC ≅ △EDC',
+  'official-q15:q15-x': 'Ex.: x=28/2',
+  'official-q15:q15-y': 'Ex.: y=30/3',
+  'official-q15:q15-perimeter': 'Ex.: 2/2',
+  'microquest:correspondence-pairs': 'Ex.: FD',
+  'microquest:included-angle': 'Ex.: ∠CBA',
+  'microquest:cevian-classification': 'Ex.: mediana',
+  'correspondence-lesson:guided-side': 'Ex.: ED',
+};
 
 export function supportsFreeTextAnswer(scope: FreeTextScope, id: string) {
   return validators.has(key(scope, id));
 }
 
+export function freeTextAnswerPlaceholder(scope: FreeTextScope, id: string) {
+  return placeholders[key(scope, id)] ?? 'Escreva uma forma matematicamente equivalente';
+}
+
 export function validateFreeTextAnswer(scope: FreeTextScope, id: string, input: string): FreeTextValidationResult {
   const validator = validators.get(key(scope, id));
   if (!validator) {
-    return {
-      supported: false,
-      correct: false,
-      message: 'Esta etapa usa uma interação estruturada; não há comparação textual para evitar falsos negativos.',
-    };
+    return { supported: false, correct: false, message: 'Esta etapa usa uma interação estruturada; não há comparação textual para evitar falsos negativos.' };
   }
   const trimmed = input.trim();
   if (!trimmed) return { supported: true, correct: false, message: 'Escreva uma resposta antes de verificar.' };
