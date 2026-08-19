@@ -19,6 +19,7 @@ const MetricModelingPage = lazy(() => import('./pages/MetricModelingPage').then(
 const ParallelismLabPage = lazy(() => import('./pages/ParallelismLabPage').then((module) => ({ default: module.ParallelismLabPage })));
 const CrossoverPage = lazy(() => import('./pages/CrossoverPage').then((module) => ({ default: module.CrossoverPage })));
 const CorrespondenceLessonPage = lazy(() => import('./pages/CorrespondenceLessonPage').then((module) => ({ default: module.CorrespondenceLessonPage })));
+const DidacticLessonPage = lazy(() => import('./pages/DidacticLessonPage').then((module) => ({ default: module.DidacticLessonPage })));
 const ProfilePage = lazy(() => import('./pages/ProfilePage').then((module) => ({ default: module.ProfilePage })));
 const AchievementsPage = lazy(() => import('./pages/AchievementsPage').then((module) => ({ default: module.AchievementsPage })));
 
@@ -89,6 +90,7 @@ export function App() {
             <Route path="map" element={<MapPage />} />
             <Route path="profile" element={<ProfilePage />} />
             <Route path="achievements" element={<AchievementsPage />} />
+            <Route path="lesson/:id" element={<DidacticLessonPage />} />
             <Route path="mission/ordered-correspondence" element={<CorrespondenceLessonPage />} />
             <Route path="encounter/official-q15" element={<OfficialQuest15Page />} />
             <Route path="encounter/:id" element={<EncounterPage />} />
