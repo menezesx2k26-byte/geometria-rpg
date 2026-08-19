@@ -7,7 +7,7 @@ interface GeometryFigureProps {
   onToggle: (id: string) => void;
   showPalette?: boolean;
   readOnly?: boolean;
-  visibleObjectIds?: string[];
+  visibleObjectIds?: string[] | undefined;
   selectionPresentation?: 'sequence' | 'pairs';
   showCorrespondenceMarks?: boolean;
 }
