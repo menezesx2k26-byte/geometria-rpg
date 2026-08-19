@@ -1,0 +1,50 @@
+name: Audit V5 E2E Summary
+
+on:
+  push:
+    branches:
+      - agent/full-audit-v5
+    paths:
+      - '.audit-v5-summary-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  summarize:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Extract E2E failure summary
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          import re
+          from pathlib import Path
+          src = Path('.audit-v5-validation.log').read_text(errors='replace')
+          src = re.sub(r'\x1b\[[0-9;]*[A-Za-z]', '', src)
+          idx = src.rfind('=== e2e ===')
+          e2e = src[idx:] if idx >= 0 else src
+          lines = e2e.splitlines()
+          selected = []
+          needles = ('failed', 'failure', 'error', 'expect(', 'timeout', 'locator', 'strict mode', 'received:', 'expected:', 'tests')
+          for i, line in enumerate(lines):
+              low = line.lower()
+              if any(n in low for n in needles) or re.search(r'^\s*\d+\)', line):
+                  start = max(0, i - 4)
+                  end = min(len(lines), i + 12)
+                  selected.extend(lines[start:end])
+          selected.extend(['', '=== tail ==='] + lines[-180:])
+          # Deduplicate adjacent repeated lines while preserving context.
+          out = []
+          for line in selected:
+              if not out or line != out[-1]:
+                  out.append(line)
+          Path('.audit-v5-e2e-summary.txt').write_text('\n'.join(out[-420:]) + '\n')
+          PY
+          rm -f .audit-v5-summary-trigger .github/workflows/audit-v5-summarize.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'ci: summarize audit v5 e2e failure'
+          git push
