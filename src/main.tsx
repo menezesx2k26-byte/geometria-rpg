@@ -5,6 +5,7 @@ import 'katex/dist/katex.min.css';
 import { App } from './App';
 import { ProgressProvider } from './state/progress';
 import './styles/global.css';
+import './styles/semantic-answer.css';
 
 createRoot(document.getElementById('root')!).render(
   <StrictMode>
