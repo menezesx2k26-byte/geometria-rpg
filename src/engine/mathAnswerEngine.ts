@@ -197,7 +197,7 @@ function parseLinearSide(value: string): LinearCoefficients | null {
 }
 
 export function parseLinearEquation(value: string): Line | null {
-  let source = value.trim().replace(/^[rs]\s*:\s*/i, '');
+  const source = value.trim().replace(/^[rs]\s*:\s*/i, '');
   const parts = source.split('=');
   if (parts.length !== 2) return null;
   const left = parseLinearSide(parts[0]);
