@@ -5,7 +5,7 @@ on:
     branches:
       - agent/full-audit-v5
     paths:
-      - '.audit-v5-final-trigger'
+      - '.audit-v5-direct-fix-note'
 
 permissions:
   contents: write
@@ -19,70 +19,14 @@ jobs:
         with:
           fetch-depth: 0
 
-      - name: Update E2E harness for audited UX
+      - name: Apply deterministic E2E harness correction
         shell: bash
         run: |
-          python3 - <<'PY'
-          from pathlib import Path
-          path = Path('tests/e2e/app.spec.ts')
-          src = path.read_text(encoding='utf-8')
-
-          old = """async function resetProgress(page: Page) {
-            await page.goto('/review');
-            await page.getByRole('button', { name: /Reiniciar progresso/ }).click();
-          }
-          """
-          new = """async function resetProgress(page: Page) {
-            await page.goto('/review');
-            await page.getByRole('button', { name: /Reiniciar progresso/ }).click();
-            await page.getByRole('button', { name: 'Sim, reiniciar', exact: true }).click();
-            await page.waitForFunction(() => {
-              const raw = localStorage.getItem('geometria-rpg:progress:v4');
-              if (!raw) return false;
-              try {
-                const stored = JSON.parse(raw);
-                return Array.isArray(stored.attempts) && stored.attempts.length === 0;
-              } catch {
-                return false;
-              }
-            });
-          }
-          """
-          if old not in src:
-              raise SystemExit('resetProgress helper pattern not found')
-          src = src.replace(old, new, 1)
-
-          old = """    const stored = JSON.parse(localStorage.getItem(key) ?? '{}');
-            stored.reviewSchedule['triangle-congruence'] = {
-          """
-          new = """    const stored = JSON.parse(localStorage.getItem(key) ?? '{}');
-            stored.reviewSchedule ??= {};
-            stored.reviewSchedule['triangle-congruence'] = {
-          """
-          if old not in src:
-              raise SystemExit('reviewSchedule pattern not found')
-          src = src.replace(old, new, 1)
-
-          old = """  await page.goto('/mission/ordered-correspondence');
-            const labels = page.locator('.interactive-figure svg text');
-          """
-          new = """  await page.goto('/mission/ordered-correspondence');
-            await expect(page.locator('.interactive-figure svg')).toBeVisible();
-            await expect(page.locator('.interactive-figure svg text').filter({ hasText: /^C$/ })).toBeVisible();
-            await expect(page.locator('.interactive-figure svg text').filter({ hasText: /^E$/ })).toBeVisible();
-            const labels = page.locator('.interactive-figure svg text');
-          """
-          if old not in src:
-              raise SystemExit('mobile SVG wait pattern not found')
-          src = src.replace(old, new, 1)
-
-          path.write_text(src, encoding='utf-8')
-          PY
-
-          rm -f .audit-v5-final-trigger
+          python3 .audit-v5-harness-patch.py
+          rm -f .audit-v5-direct-fix-note .audit-v5-harness-patch.py .github/workflows/audit-v5-final-qa.yml
           git config user.name 'github-actions[bot]'
           git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
-          git add tests/e2e/app.spec.ts .audit-v5-final-trigger
+          git add -A
           git commit -m 'test: align e2e harness with audited UX'
           git push
 
@@ -99,10 +43,8 @@ jobs:
           LOG=.audit-v5-final-validation.log
           STATUS=.audit-v5-final-status.txt
           : > "$LOG"
-
           npm ci >> "$LOG" 2>&1; CI=$?
           LINT=125; UNIT=125; BUILD=125; PW=125; E2E=125
-
           if [ "$CI" -eq 0 ]; then
             npm run lint >> "$LOG" 2>&1; LINT=$?
             npm run test >> "$LOG" 2>&1; UNIT=$?
@@ -112,7 +54,6 @@ jobs:
               npm run test:e2e >> "$LOG" 2>&1; E2E=$?
             fi
           fi
-
           RESULT=success
           for CODE in "$CI" "$LINT" "$UNIT" "$BUILD" "$PW" "$E2E"; do
             if [ "$CODE" -ne 0 ]; then RESULT=failed; fi
