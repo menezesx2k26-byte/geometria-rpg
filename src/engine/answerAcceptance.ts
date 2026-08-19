@@ -1,14 +1,17 @@
 import {
-  angleCongruenceEquivalent,
   angleEquivalent,
   keywordEquivalent,
-  lineEquivalent,
   normalizeMathText,
-  pointEquivalent,
   scalarEquivalent,
   segmentEquivalent,
   triangleCorrespondenceEquivalent,
 } from './mathAnswerEngine';
+import {
+  angleCongruenceEquivalentFlexible,
+  keywordEquivalentFlexible,
+  lineEquivalentFlexible,
+  pointEquivalentFlexible,
+} from './semanticInputExtensions';
 
 export function isAcceptedOption(
   selectedId: string | undefined,
@@ -73,27 +76,27 @@ const hasExplicitRelation = (input: string) => {
 
 register('microquest', 'correspondence-pairs', (input) => segmentEquivalent(input, 'D', 'F'));
 register('microquest', 'included-angle', (input) => angleEquivalent(input, 'B'));
-register('microquest', 'cevian-classification', (input) => keywordEquivalent(input, ['mediana', 'median']));
+register('microquest', 'cevian-classification', (input) => keywordEquivalentFlexible(input, ['mediana', 'median']));
 register('correspondence-lesson', 'guided-b-e', (input) => keywordEquivalent(input, ['e', 'verticee', 'vérticee']));
 register('correspondence-lesson', 'guided-c-f', (input) => keywordEquivalent(input, ['f', 'verticef', 'vérticef']));
 register('correspondence-lesson', 'guided-side', (input) => segmentEquivalent(input, 'D', 'E'));
 register('correspondence-lesson', 'guided-angle', (input) => angleEquivalent(input, 'F'));
 
-register('official-q15', 'q15-opv', (input) => hasExplicitRelation(input) && angleCongruenceEquivalent(input, 'BCA', 'DCE'));
-register('official-q15', 'q15-asa', (input) => keywordEquivalent(input, ['ala', 'angulo-lado-angulo', 'ângulo-lado-ângulo', 'anguloladoangulo']));
+register('official-q15', 'q15-opv', (input) => hasExplicitRelation(input) && angleCongruenceEquivalentFlexible(input, 'BCA', 'DCE'));
+register('official-q15', 'q15-asa', (input) => keywordEquivalentFlexible(input, ['ala', 'angulo-lado-angulo', 'ângulo-lado-ângulo', 'anguloladoangulo']));
 register('official-q15', 'q15-order', (input) => hasExplicitRelation(input) && triangleCorrespondenceEquivalent(input, 'CBA', 'CDE'));
 register('official-q15', 'q15-x', (input) => scalarEquivalent(input, 14, 'x'));
 register('official-q15', 'q15-y', (input) => scalarEquivalent(input, 10, 'y'));
 register('official-q15', 'q15-perimeter', (input) => scalarEquivalent(input, 1));
 
-register('journey', 'midpoint-bc', (input) => pointEquivalent(input, { x: -1.5, y: 0.5 }));
-register('journey', 'generic-point-line', (input) => lineEquivalent(input, { a: 1, b: 1, c: 1 }));
+register('journey', 'midpoint-bc', (input) => pointEquivalentFlexible(input, { x: -1.5, y: 0.5 }));
+register('journey', 'generic-point-line', (input) => lineEquivalentFlexible(input, { a: 1, b: 1, c: 1 }));
 register('journey', 'solve-angle-x', (input) => scalarEquivalent(input, 15, 'x'));
-register('journey', 'median-boss', (input) => lineEquivalent(input, { a: 3, b: 7, c: 1 }));
+register('journey', 'median-boss', (input) => lineEquivalentFlexible(input, { a: 3, b: 7, c: 1 }));
 register('journey', 'solve-system', (input) => {
-  if (pointEquivalent(input, { x: 2 / 3, y: 2 / 3 })) return true;
+  if (pointEquivalentFlexible(input, { x: 2 / 3, y: 2 / 3 })) return true;
   const pointMatch = input.match(/\([^()]+\)/);
-  return Boolean(pointMatch && pointEquivalent(pointMatch[0], { x: 2 / 3, y: 2 / 3 }));
+  return Boolean(pointMatch && pointEquivalentFlexible(pointMatch[0], { x: 2 / 3, y: 2 / 3 }));
 });
 
 const placeholders: Readonly<Record<string, string>> = {
