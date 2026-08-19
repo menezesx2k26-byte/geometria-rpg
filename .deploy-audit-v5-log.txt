@@ -1,0 +1,156 @@
+
+added 223 packages, and audited 224 packages in 5s
+
+62 packages are looking for funding
+  run `npm fund` for details
+
+found 0 vulnerabilities
+
+> geometria-rpg@0.2.0 lint
+> eslint .
+
+
+> geometria-rpg@0.2.0 test
+> vitest run
+
+
+[1m[30m[46m RUN [49m[39m[22m [36mv4.1.10 [39m[90m/home/runner/work/geometria-rpg/geometria-rpg[39m
+
+ [32m✓[39m src/engine/proofEngine.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 8[2mms[22m[39m
+ [32m✓[39m src/engine/adaptiveEngine.test.ts [2m([22m[2m6 tests[22m[2m)[22m[32m 22[2mms[22m[39m
+ [32m✓[39m src/state/progress.test.ts [2m([22m[2m8 tests[22m[2m)[22m[32m 24[2mms[22m[39m
+ [32m✓[39m src/engine/analyticGeometryEngine.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 10[2mms[22m[39m
+ [32m✓[39m src/data/content.test.ts [2m([22m[2m4 tests[22m[2m)[22m[32m 9[2mms[22m[39m
+ [32m✓[39m src/engine/encounterEngine.test.ts [2m([22m[2m3 tests[22m[2m)[22m[32m 6[2mms[22m[39m
+
+[2m Test Files [22m [1m[32m6 passed[39m[22m[90m (6)[39m
+[2m      Tests [22m [1m[32m31 passed[39m[22m[90m (31)[39m
+[2m   Start at [22m 01:37:26
+[2m   Duration [22m 651ms[2m (transform 546ms, setup 0ms, import 815ms, tests 78ms, environment 1ms)[22m
+
+
+> geometria-rpg@0.2.0 build
+> tsc -b && vite build
+
+[36mvite v8.2.1 [32mbuilding client environment for production...[36m[39m
+[2Ktransforming...✓ 1854 modules transformed.
+rendering chunks...
+computing gzip size...
+dist/index.html                                         0.62 kB │ gzip:  0.36 kB
+dist/assets/KaTeX_Size3-Regular-CTq5MqoE.woff           4.42 kB
+dist/assets/KaTeX_Size4-Regular-Dl5lxZxV.woff2          4.92 kB
+dist/assets/KaTeX_Size2-Regular-Dy4dx90m.woff2          5.20 kB
+dist/assets/KaTeX_Size1-Regular-mCD8mA8B.woff2          5.46 kB
+dist/assets/KaTeX_Size4-Regular-BF-4gkZK.woff           5.98 kB
+dist/assets/KaTeX_Size2-Regular-oD1tc_U0.woff           6.18 kB
+dist/assets/KaTeX_Size1-Regular-C195tn64.woff           6.49 kB
+dist/assets/KaTeX_Caligraphic-Regular-Di6jR-x-.woff2    6.90 kB
+dist/assets/KaTeX_Caligraphic-Bold-Dq_IR9rO.woff2       6.91 kB
+dist/assets/KaTeX_Size3-Regular-DgpXs0kz.ttf            7.58 kB
+dist/assets/KaTeX_Caligraphic-Regular-CTRA-rTL.woff     7.65 kB
+dist/assets/KaTeX_Caligraphic-Bold-BEiXGLvX.woff        7.71 kB
+dist/assets/KaTeX_Script-Regular-D3wIWfF6.woff2         9.64 kB
+dist/assets/KaTeX_SansSerif-Regular-DDBCnlJ7.woff2     10.34 kB
+dist/assets/KaTeX_Size4-Regular-DWFBv043.ttf           10.36 kB
+dist/assets/KaTeX_Script-Regular-D5yQViql.woff         10.58 kB
+dist/assets/KaTeX_Fraktur-Regular-CTYiF6lA.woff2       11.31 kB
+dist/assets/KaTeX_Fraktur-Bold-CL6g_b3V.woff2          11.34 kB
+dist/assets/KaTeX_Size2-Regular-B7gKUWhC.ttf           11.50 kB
+dist/assets/KaTeX_SansSerif-Italic-C3H0VqGB.woff2      12.02 kB
+dist/assets/KaTeX_SansSerif-Bold-D1sUS0GD.woff2        12.21 kB
+dist/assets/KaTeX_Size1-Regular-Dbsnue_I.ttf           12.22 kB
+dist/assets/KaTeX_SansSerif-Regular-CS6fqUqJ.woff      12.31 kB
+dist/assets/KaTeX_Caligraphic-Regular-wX97UBjC.ttf     12.34 kB
+dist/assets/KaTeX_Caligraphic-Bold-ATXxdsX0.ttf        12.36 kB
+dist/assets/KaTeX_Fraktur-Regular-Dxdc4cR9.woff        13.20 kB
+dist/assets/KaTeX_Fraktur-Bold-BsDP51OF.woff           13.29 kB
+dist/assets/KaTeX_Typewriter-Regular-CO6r4hn1.woff2    13.56 kB
+dist/assets/KaTeX_SansSerif-Italic-DN2j7dab.woff       14.11 kB
+dist/assets/KaTeX_SansSerif-Bold-DbIhKOiC.woff         14.40 kB
+dist/assets/KaTeX_Typewriter-Regular-C0xS9mPB.woff     16.02 kB
+dist/assets/KaTeX_Math-BoldItalic-CZnvNsCZ.woff2       16.40 kB
+dist/assets/KaTeX_Math-Italic-t53AETM-.woff2           16.44 kB
+dist/assets/KaTeX_Script-Regular-C5JkGWo-.ttf          16.64 kB
+dist/assets/KaTeX_Main-BoldItalic-DxDJ3AOS.woff2       16.78 kB
+dist/assets/KaTeX_Main-Italic-NWA7e6Wa.woff2           16.98 kB
+dist/assets/KaTeX_Math-BoldItalic-iY-2wyZ7.woff        18.66 kB
+dist/assets/KaTeX_Math-Italic-DA0__PXp.woff            18.74 kB
+dist/assets/KaTeX_Main-BoldItalic-SpSLRI95.woff        19.41 kB
+dist/assets/KaTeX_SansSerif-Regular-BNo7hRIc.ttf       19.43 kB
+dist/assets/KaTeX_Fraktur-Regular-CB_wures.ttf         19.57 kB
+dist/assets/KaTeX_Fraktur-Bold-BdnERNNW.ttf            19.58 kB
+dist/assets/KaTeX_Main-Italic-BMLOBm91.woff            19.67 kB
+dist/assets/KaTeX_SansSerif-Italic-YYjJ1zSn.ttf        22.36 kB
+dist/assets/KaTeX_SansSerif-Bold-CFMepnvq.ttf          24.50 kB
+dist/assets/KaTeX_Main-Bold-Cx986IdX.woff2             25.32 kB
+dist/assets/KaTeX_Main-Regular-B22Nviop.woff2          26.27 kB
+dist/assets/KaTeX_Typewriter-Regular-D3Ib7_Hf.ttf      27.55 kB
+dist/assets/KaTeX_AMS-Regular-BQhdFMY1.woff2           28.07 kB
+dist/assets/KaTeX_Main-Bold-Jm3AIy58.woff              29.91 kB
+dist/assets/KaTeX_Main-Regular-Dr94JaBh.woff           30.77 kB
+dist/assets/KaTeX_Math-BoldItalic-B3XSjfu4.ttf         31.19 kB
+dist/assets/KaTeX_Math-Italic-flOr_0UB.ttf             31.30 kB
+dist/assets/KaTeX_Main-BoldItalic-DzxPMmG6.ttf         32.96 kB
+dist/assets/KaTeX_AMS-Regular-DMm9YOAa.woff            33.51 kB
+dist/assets/KaTeX_Main-Italic-3WenGoN9.ttf             33.58 kB
+dist/assets/KaTeX_Main-Bold-waoOVXN0.ttf               51.33 kB
+dist/assets/KaTeX_Main-Regular-ypZvNtVU.ttf            53.58 kB
+dist/assets/KaTeX_AMS-Regular-DRggAlZN.ttf             63.63 kB
+dist/assets/index-BoByS2B_.css                         94.04 kB │ gzip: 21.55 kB
+dist/assets/arrow-left-CzP21QyJ.js                      0.20 kB │ gzip:  0.19 kB │ map:     0.85 kB
+dist/assets/arrow-right-CH7Hoc6Y.js                     0.20 kB │ gzip:  0.19 kB │ map:     0.85 kB
+dist/assets/gauge-CyMlGBNl.js                           0.21 kB │ gzip:  0.19 kB │ map:     0.84 kB
+dist/assets/flame-OYkRNCMU.js                           0.23 kB │ gzip:  0.21 kB │ map:     0.83 kB
+dist/assets/rotate-ccw-SSDa6wkW.js                      0.24 kB │ gzip:  0.21 kB │ map:     0.88 kB
+dist/assets/arrow-left-right-CjQUh85w.js                0.29 kB │ gzip:  0.22 kB │ map:     1.09 kB
+dist/assets/shield-CO_diCUQ.js                          0.30 kB │ gzip:  0.25 kB │ map:     0.91 kB
+dist/assets/lightbulb-KMhGuBhl.js                       0.32 kB │ gzip:  0.25 kB │ map:     1.06 kB
+dist/assets/target-BVgCQdwU.js                          0.37 kB │ gzip:  0.23 kB │ map:     1.79 kB
+dist/assets/scroll-text-B4tXpaDg.js                     0.39 kB │ gzip:  0.26 kB │ map:     1.20 kB
+dist/assets/map-pinned-C9OyEzDR.js                      0.43 kB │ gzip:  0.32 kB │ map:     1.24 kB
+dist/assets/star-BrGOZ7Jo.js                            0.50 kB │ gzip:  0.32 kB │ map:     1.10 kB
+dist/assets/swords-OBdPDOS1.js                          0.58 kB │ gzip:  0.31 kB │ map:     1.84 kB
+dist/assets/brain-circuit-9HHhPhYB.js                   0.84 kB │ gzip:  0.43 kB │ map:     2.34 kB
+dist/assets/AchievementsPage-BXCz47Ff.js                1.99 kB │ gzip:  0.85 kB │ map:     4.18 kB
+dist/assets/CrossoverPage-B34lI1Zd.js                   2.22 kB │ gzip:  1.16 kB │ map:     5.32 kB
+dist/assets/MicroquestPage-C4A_dDLc.js                  2.28 kB │ gzip:  1.01 kB │ map:     5.49 kB
+dist/assets/adaptiveSelector-D35cFxuK.js                2.33 kB │ gzip:  1.15 kB │ map:     7.48 kB
+dist/assets/CompetencyDebrief-DKKOGdzH.js               3.05 kB │ gzip:  1.32 kB │ map:     6.56 kB
+dist/assets/ParallelismLabPage-GHRO-fAA.js              3.20 kB │ gzip:  1.48 kB │ map:     6.06 kB
+dist/assets/GeometryFigure-Dwp7a60v.js                  3.91 kB │ gzip:  1.54 kB │ map:    10.27 kB
+dist/assets/CoordinateLabPage-CLKtoM3a.js               4.96 kB │ gzip:  2.06 kB │ map:    11.68 kB
+dist/assets/MapPage-6XSDWD_H.js                         5.11 kB │ gzip:  1.80 kB │ map:    11.93 kB
+dist/assets/ProfilePage-BetbBiWT.js                     5.37 kB │ gzip:  1.76 kB │ map:    12.34 kB
+dist/assets/CorrespondenceLessonPage-JD0fMdsH.js        5.39 kB │ gzip:  2.22 kB │ map:    11.48 kB
+dist/assets/LineForgePage-BeHXV100.js                   5.96 kB │ gzip:  2.12 kB │ map:    12.28 kB
+dist/assets/TrainingPage-DoMrqVGz.js                    6.15 kB │ gzip:  2.38 kB │ map:    14.15 kB
+dist/assets/VerticalSlicePage-BTYIbJhs.js               6.24 kB │ gzip:  2.29 kB │ map:    13.83 kB
+dist/assets/MetricModelingPage-8bk7xfi4.js              6.98 kB │ gzip:  2.77 kB │ map:    19.82 kB
+dist/assets/EncounterPage-vBt5gW5J.js                   7.23 kB │ gzip:  2.62 kB │ map:    20.53 kB
+dist/assets/OfficialQuest15Page-OC_KP81a.js             7.97 kB │ gzip:  3.18 kB │ map:    17.95 kB
+dist/assets/ReviewPage-B7wWo4ax.js                      8.16 kB │ gzip:  2.80 kB │ map:    18.88 kB
+dist/assets/ProofPage-CvdHwkdr.js                      10.39 kB │ gzip:  3.63 kB │ map:    26.85 kB
+dist/assets/proofs-B5wPpglV.js                         17.95 kB │ gzip:  4.90 kB │ map:    33.67 kB
+dist/assets/CampaignPage-JVjAbSw3.js                   18.89 kB │ gzip:  5.22 kB │ map:    38.60 kB
+dist/assets/AnalyticalCampaignPage-Cr_f76TV.js         21.45 kB │ gzip:  5.98 kB │ map:    42.94 kB
+dist/assets/interactiveJourneys-_vFSkipz.js            29.42 kB │ gzip:  9.97 kB │ map:    49.85 kB
+dist/assets/progress-CCBirloy.js                      102.97 kB │ gzip: 28.60 kB │ map:   245.00 kB
+dist/assets/index-Bz5kguEW.js                         235.03 kB │ gzip: 75.56 kB │ map: 1,270.71 kB
+dist/assets/CodexPage-FoSAsaRj.js                     263.93 kB │ gzip: 79.57 kB │ map:   945.31 kB
+
+[32m✓ built in 549ms[39m
+npm warn exec The following package was not found and will be installed: wrangler@4.124.0
+
+ ⛅️ wrangler 4.124.0
+────────────────────
+🌀 Building list of assets...
+✨ Read 170 files from the assets directory /home/runner/work/geometria-rpg/geometria-rpg/dist
+🌀 Starting asset upload...
+No updated asset files to upload. Proceeding with deployment...
+Total Upload: 0.34 KiB / gzip: 0.25 KiB
+Uploaded geometria-rpg (3.14 sec)
+Deployed geometria-rpg triggers (0.57 sec)
+  https://geometria-rpg.menezesx2k26.workers.dev
+Current Version ID: 76158791-4a37-4d53-9557-785f143cdaf1
+
+Cloudflare collects anonymous telemetry about your usage of Wrangler. Learn more at https://github.com/cloudflare/workers-sdk/tree/main/packages/wrangler/telemetry.md

@@ -1,0 +1,8 @@
+status=success
+npm_ci=0
+lint=0
+unit=0
+build=0
+deploy=0
+url=https://geometria-rpg.menezesx2k26.workers.dev
+verified_source_commit=a2d96684f014f51bad6242a46432a6a228f7dc9f
