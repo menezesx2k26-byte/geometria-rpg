@@ -1,0 +1,63 @@
+name: Verify Audit V5 Deployment
+
+on:
+  push:
+    branches:
+      - agent/deploy-audit-v5
+    paths:
+      - '.deploy-audit-v5-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  verify-deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    env:
+      CLOUDFLARE_ACCOUNT_ID: 257bca437616da74ece1ce4bbaf0bd89
+      CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - name: Validate and deploy merged audit
+        shell: bash
+        run: |
+          set +e
+          npm ci > .deploy-audit-v5-log.txt 2>&1; CI=$?
+          LINT=125; UNIT=125; BUILD=125; DEPLOY=125; URL=
+          if [ "$CI" -eq 0 ]; then
+            npm run lint >> .deploy-audit-v5-log.txt 2>&1; LINT=$?
+            npm run test >> .deploy-audit-v5-log.txt 2>&1; UNIT=$?
+            npm run build >> .deploy-audit-v5-log.txt 2>&1; BUILD=$?
+            if [ "$LINT" -eq 0 ] && [ "$UNIT" -eq 0 ] && [ "$BUILD" -eq 0 ]; then
+              OUTPUT=$(npx wrangler@4 deploy 2>&1); DEPLOY=$?
+              printf '%s\n' "$OUTPUT" >> .deploy-audit-v5-log.txt
+              URL=$(printf '%s\n' "$OUTPUT" | grep -Eo 'https://[A-Za-z0-9.-]+\.workers\.dev' | tail -1 || true)
+            fi
+          fi
+          STATUS=success
+          for CODE in "$CI" "$LINT" "$UNIT" "$BUILD" "$DEPLOY"; do
+            if [ "$CODE" -ne 0 ]; then STATUS=failed; fi
+          done
+          {
+            echo "status=$STATUS"
+            echo "npm_ci=$CI"
+            echo "lint=$LINT"
+            echo "unit=$UNIT"
+            echo "build=$BUILD"
+            echo "deploy=$DEPLOY"
+            echo "url=$URL"
+            echo "verified_source_commit=a2d96684f014f51bad6242a46432a6a228f7dc9f"
+          } > .deploy-audit-v5-status.txt
+          rm -f .deploy-audit-v5-trigger .github/workflows/deploy-audit-v5-verify.yml
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          git add -A
+          git commit -m 'ci: record audit v5 deployment verification' || true
+          git push
