@@ -57,8 +57,11 @@ jobs:
           if (!(await confirm.isDisabled())) throw new Error('Confirm must start disabled');
 
           for (const label of ['D','A','F','C','E','B']) await palette.getByRole('button', { name: label, exact: true }).click();
-          const badges = await page.locator('.figure-object-button > span').allTextContents();
-          if (badges.join(',') !== '1,1,2,2,3,3') throw new Error(`Pair badges wrong: ${badges.join(',')}`);
+          const expectedBadges = { A: '1', D: '1', F: '2', C: '2', E: '3', B: '3' };
+          for (const [label, expected] of Object.entries(expectedBadges)) {
+            const badge = await palette.getByRole('button', { name: label, exact: true }).locator('span').textContent();
+            if (badge !== expected) throw new Error(`Badge for ${label}: expected ${expected}, got ${badge}`);
+          }
           if (!(await page.getByText(/Par 1: D ↔ A/).isVisible())) throw new Error('Pair summary missing');
           if (!(await confirm.isEnabled())) throw new Error('Confirm must enable after 3 complete pairs');
           await confirm.click();
