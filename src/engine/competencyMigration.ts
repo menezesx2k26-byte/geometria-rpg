@@ -24,6 +24,10 @@ export function createInitialAdaptiveState(): AdaptiveState {
   return { lastTargetIds: [], recommendationHistory: [] };
 }
 
+function finiteNumber(value: unknown, fallback: number) {
+  return typeof value === 'number' && Number.isFinite(value) ? value : fallback;
+}
+
 export function normalizeCompetencyStates(value: unknown) {
   const initial = createInitialCompetencyStates();
   if (!value || typeof value !== 'object') return initial;
@@ -35,19 +39,21 @@ export function normalizeCompetencyStates(value: unknown) {
       ...initial[id],
       ...current,
       competencyId: id,
-      mastery: clamp01(current.mastery ?? initial[id].mastery),
-      confidence: clamp01(current.confidence ?? initial[id].confidence),
-      evidenceCount: Math.max(0, current.evidenceCount ?? 0),
-      distinctChallengeCount: Math.max(0, current.distinctChallengeCount ?? 0),
-      meanCoverage: clamp01(current.meanCoverage ?? 0),
-      lastEvidenceIds: Array.isArray(current.lastEvidenceIds) ? current.lastEvidenceIds.slice(-20) : [],
+      mastery: clamp01(finiteNumber(current.mastery, initial[id].mastery)),
+      confidence: clamp01(finiteNumber(current.confidence, initial[id].confidence)),
+      evidenceCount: Math.max(0, Math.floor(finiteNumber(current.evidenceCount, 0))),
+      distinctChallengeCount: Math.max(0, Math.floor(finiteNumber(current.distinctChallengeCount, 0))),
+      meanCoverage: clamp01(finiteNumber(current.meanCoverage, 0)),
+      lastEvidenceIds: Array.isArray(current.lastEvidenceIds)
+        ? current.lastEvidenceIds.filter((entry): entry is string => typeof entry === 'string').slice(-20)
+        : [],
     };
   }
   return initial;
 }
 
 function clamp01(value: number) {
-  return Math.max(0, Math.min(1, value));
+  return Number.isFinite(value) ? Math.max(0, Math.min(1, value)) : 0;
 }
 
 export function replayLegacyAttempts(legacyAttempts: LegacyAttemptLike[]) {

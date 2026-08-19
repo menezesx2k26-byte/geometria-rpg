@@ -92,25 +92,55 @@ export const euclideanCampaignQuests: CampaignQuest[] = [
   q({ number: 39, title: 'Cevianas do equilátero', teaches: ['equilateral-properties'], requires: ['equilateral-triangle', 'isosceles-special-cevian'], difficulty: 5, proofType: 'synthesis', commonErrors: ['bisector-definition', 'midpoint-definition', 'perpendicularity'] }),
   q({ number: 40, title: 'Síntese de congruência', teaches: [], requires: ['cpctc', 'sas', 'asa', 'sss'], reinforces: ['triangle-congruence'], difficulty: 4, proofType: 'synthesis', commonErrors: ['ordered-correspondence', 'proof-gap'] }),
   q({ number: 41, title: 'Construção que revela a prova', teaches: [], requires: ['auxiliary-construction', 'triangle-inequality'], difficulty: 4, proofType: 'construction', commonErrors: ['construction-choice'] }),
-  q({ number: 42, title: 'Boss de reflexão e otimização', teaches: ['optimization'], requires: ['reflection', 'triangle-inequality'], difficulty: 5, proofType: 'optimization', commonErrors: ['construction-choice', 'proof-gap'] }),
+  q({ number: 42, title: 'Prova-chefe de reflexão e otimização', teaches: ['optimization'], requires: ['reflection', 'triangle-inequality'], difficulty: 5, proofType: 'optimization', commonErrors: ['construction-choice', 'proof-gap'] }),
   q({ number: 43, title: 'Triângulo Russo', teaches: [], requires: ['auxiliary-construction', 'cpctc', 'triangle-inequality', 'contraposition'], reinforces: ['sas', 'sss', 'optimization'], difficulty: 5, proofType: 'synthesis', commonErrors: ['construction-choice', 'proof-gap'] }),
 ];
 
 export function validateEuclideanCampaign() {
   const errors: string[] = [];
   const skillIds = new Set(skills.map((skill) => skill.id));
+  const questIds = euclideanCampaignQuests.map((quest) => quest.id);
   const questNumbers = euclideanCampaignQuests.map((quest) => quest.number);
   const expectedNumbers = Array.from({ length: 43 }, (_, index) => index + 1);
-  if (questNumbers.length !== 43 || expectedNumbers.some((number) => !questNumbers.includes(number))) errors.push('A campanha deve conter exatamente as questões 1–43.');
-  if (new Set(euclideanCampaignQuests.map((quest) => quest.id)).size !== 43) errors.push('Há IDs duplicados na campanha euclidiana.');
+  const regionIds = euclideanCampaignRegions.map((region) => region.id);
+  const regionOrders = euclideanCampaignRegions.map((region) => region.order);
+  const ownedQuestionNumbers = euclideanCampaignRegions.flatMap((region) => region.questionNumbers);
+
+  if (questNumbers.length !== 43 || expectedNumbers.some((number) => !questNumbers.includes(number))) {
+    errors.push('A campanha deve conter exatamente as questões 1–43.');
+  }
+  if (new Set(questIds).size !== questIds.length) errors.push('Há IDs duplicados na campanha euclidiana.');
+  if (new Set(questNumbers).size !== questNumbers.length) errors.push('Há números de questão duplicados na campanha euclidiana.');
+  if (new Set(regionIds).size !== regionIds.length) errors.push('Há IDs de região duplicados na campanha euclidiana.');
+  if (new Set(regionOrders).size !== regionOrders.length) errors.push('Há ordens de região duplicadas na campanha euclidiana.');
+  if (new Set(ownedQuestionNumbers).size !== ownedQuestionNumbers.length) errors.push('Uma questão pertence a mais de uma região euclidiana primária.');
+  if (expectedNumbers.some((number) => !ownedQuestionNumbers.includes(number))) errors.push('Nem todas as questões 1–43 pertencem a uma região euclidiana primária.');
+
+  [...regionOrders].sort((a, b) => a - b).forEach((order, index) => {
+    if (order !== index + 1) errors.push(`Ordem das regiões euclidianas não é contínua: esperado ${index + 1}, recebido ${order}.`);
+  });
+
   for (const quest of euclideanCampaignQuests) {
     if (!quest.sourceQuestion) errors.push(`${quest.id}: sourceQuestion ausente.`);
+    if (quest.playableRoute && !quest.playableRoute.startsWith('/')) errors.push(`${quest.id}: rota jogável deve ser absoluta.`);
     for (const skillId of [...quest.requires, ...quest.teaches, ...quest.reinforces, ...quest.recoverySkills]) {
       if (!skillIds.has(skillId)) errors.push(`${quest.id}: skill inexistente ${skillId}.`);
     }
     const region = euclideanCampaignRegions.find((item) => item.id === quest.regionId);
     if (!region?.questionNumbers.includes(quest.number)) errors.push(`${quest.id}: vínculo de região inconsistente.`);
   }
+
+  for (const region of euclideanCampaignRegions) {
+    for (const skillId of region.skillIds) if (!skillIds.has(skillId)) errors.push(`${region.id}: skill inexistente ${skillId}.`);
+    for (const questId of [...region.bossQuestIds, ...region.tutorialQuestIds, ...(region.reusedQuestIds ?? [])]) {
+      if (!euclideanCampaignQuests.some((quest) => quest.id === questId)) errors.push(`${region.id}: quest referenciada inexistente ${questId}.`);
+    }
+    for (const number of region.questionNumbers) {
+      const quest = euclideanCampaignQuests.find((item) => item.number === number);
+      if (!quest || quest.regionId !== region.id) errors.push(`${region.id}: questão ${number} sem vínculo primário recíproco.`);
+    }
+  }
+
   return errors;
 }
 

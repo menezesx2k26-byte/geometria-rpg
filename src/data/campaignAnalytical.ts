@@ -85,15 +85,49 @@ export const analyticalCampaignQuests: AnalyticalCampaignQuest[] = [
 export function validateAnalyticalCampaign() {
   const errors: string[] = [];
   const skillIds = new Set(skills.map((skill) => skill.id));
+  const questIds = analyticalCampaignQuests.map((quest) => quest.id);
   const numbers = analyticalCampaignQuests.map((quest) => quest.number);
-  if (numbers.length !== 30 || Array.from({ length: 30 }, (_, index) => index + 1).some((number) => !numbers.includes(number))) errors.push('A campanha analítica deve conter exatamente as questões 1–30.');
+  const expectedNumbers = Array.from({ length: 30 }, (_, index) => index + 1);
+  const regionIds = analyticalCampaignRegions.map((region) => region.id);
+  const regionOrders = analyticalCampaignRegions.map((region) => region.order);
+  const ownedNumbers = analyticalCampaignRegions.flatMap((region) => region.questionNumbers);
+
+  if (numbers.length !== 30 || expectedNumbers.some((number) => !numbers.includes(number))) {
+    errors.push('A campanha analítica deve conter exatamente as questões 1–30.');
+  }
+  if (new Set(questIds).size !== questIds.length) errors.push('Há IDs duplicados na campanha analítica.');
+  if (new Set(numbers).size !== numbers.length) errors.push('Há números de questão duplicados na campanha analítica.');
+  if (new Set(regionIds).size !== regionIds.length) errors.push('Há IDs de região duplicados na campanha analítica.');
+  if (new Set(regionOrders).size !== regionOrders.length) errors.push('Há ordens de região duplicadas na campanha analítica.');
+  if (new Set(ownedNumbers).size !== ownedNumbers.length) errors.push('Uma questão pertence a mais de uma região analítica primária.');
+  if (expectedNumbers.some((number) => !ownedNumbers.includes(number))) errors.push('Nem todas as questões 1–30 pertencem a uma região analítica primária.');
+
+  [...regionOrders].sort((a, b) => a - b).forEach((order, index) => {
+    if (order !== index + 1) errors.push(`Ordem das regiões analíticas não é contínua: esperado ${index + 1}, recebido ${order}.`);
+  });
+
   for (const quest of analyticalCampaignQuests) {
+    if (!quest.sourceQuestion) errors.push(`${quest.id}: sourceQuestion ausente.`);
     if (!quest.algebraSkills.length || !quest.geometrySkills.length) errors.push(`${quest.id}: competências algébricas ou geométricas ausentes.`);
-    for (const id of [...quest.requires, ...quest.teaches, ...quest.reinforces, ...quest.recoverySkills]) if (!skillIds.has(id)) errors.push(`${quest.id}: skill inexistente ${id}.`);
+    if (quest.playableRoute && !quest.playableRoute.startsWith('/')) errors.push(`${quest.id}: rota jogável deve ser absoluta.`);
+    for (const id of [...quest.requires, ...quest.teaches, ...quest.reinforces, ...quest.recoverySkills]) {
+      if (!skillIds.has(id)) errors.push(`${quest.id}: skill inexistente ${id}.`);
+    }
+    const region = analyticalCampaignRegions.find((item) => item.id === quest.regionId);
+    if (!region?.questionNumbers.includes(quest.number)) errors.push(`${quest.id}: vínculo de região inconsistente.`);
   }
+
   for (const region of analyticalCampaignRegions) {
-    for (const id of region.reusedQuestIds ?? []) if (!analyticalCampaignQuests.some((quest) => quest.id === id)) errors.push(`${region.id}: quest reutilizada inexistente ${id}.`);
+    for (const skillId of region.skillIds) if (!skillIds.has(skillId)) errors.push(`${region.id}: skill inexistente ${skillId}.`);
+    for (const id of [...region.bossQuestIds, ...region.tutorialQuestIds, ...(region.reusedQuestIds ?? [])]) {
+      if (!analyticalCampaignQuests.some((quest) => quest.id === id)) errors.push(`${region.id}: quest referenciada inexistente ${id}.`);
+    }
+    for (const number of region.questionNumbers) {
+      const quest = analyticalCampaignQuests.find((item) => item.number === number);
+      if (!quest || quest.regionId !== region.id) errors.push(`${region.id}: questão ${number} sem vínculo primário recíproco.`);
+    }
   }
+
   return errors;
 }
 

@@ -27,7 +27,7 @@ export const campaignChapters: CampaignChapter[] = [
   {
     id: 'chapter-congruence', order: 1, title: 'Ala da Congruência',
     subtitle: 'Correspondências e provas',
-    description: 'Leia a ordem dos vértices, aplique critérios e encerre com uma Boss Proof.',
+    description: 'Leia a ordem dos vértices, aplique critérios e encerre com uma prova-chefe.',
     accent: '#c084fc',
     nodeIds: ['mission-vertex-order', 'mission-opv-sas', 'mission-mirror-review', 'mission-official-q15', 'checkpoint-isosceles', 'boss-cevian'],
   },
@@ -80,13 +80,13 @@ export const campaignNodes: CampaignNode[] = [
   },
   {
     id: 'boss-cevian', chapterId: 'chapter-congruence', order: 6,
-    title: 'Guardião das Cevianas', subtitle: 'Bissetriz ⇒ mediana e altura', narrativeLabel: 'Boss Proof', type: 'boss',
+    title: 'Guardião das Cevianas', subtitle: 'Bissetriz ⇒ mediana e altura', narrativeLabel: 'Prova-chefe', type: 'boss',
     route: '/proof/isosceles-cevian?mode=training', completionId: 'proof:isosceles-cevian', prerequisites: ['checkpoint-isosceles'], concepts: ['isosceles-special-cevian', 'midpoint', 'perpendicularity'],
     reward: { xp: 75, achievementId: 'first-boss', unlockTitle: 'Título: Guardião das Cevianas' },
   },
   {
     id: 'mission-parallelism', chapterId: 'chapter-parallelism', order: 7,
-    title: 'Ponte das Paralelas', subtitle: 'Famílias, conversas e paralelogramo', narrativeLabel: 'Challenge do capítulo', type: 'challenge',
+    title: 'Ponte das Paralelas', subtitle: 'Famílias, conversas e paralelogramo', narrativeLabel: 'Desafio do capítulo', type: 'challenge',
     route: '/lab/parallelism', completionId: 'parallelism-bridge', prerequisites: ['boss-cevian'], concepts: ['parallel-angle-families', 'parallel-converse-skill', 'parallelogram-characterization'],
     reward: { xp: 55, unlockTitle: 'Insígnia das Paralelas' },
   },
@@ -110,7 +110,7 @@ export const campaignNodes: CampaignNode[] = [
   },
   {
     id: 'boss-exercise-48', chapterId: 'chapter-analytic', order: 11,
-    title: 'O Enigma das Duas Cevianas', subtitle: 'Figura → sistema → prova métrica', narrativeLabel: 'Boss analítico', type: 'boss',
+    title: 'O Enigma das Duas Cevianas', subtitle: 'Figura → sistema → prova métrica', narrativeLabel: 'Chefe analítico', type: 'boss',
     route: '/lab/exercise-48', completionId: 'exercise-48-modeling', prerequisites: ['mission-language-bridge'], concepts: ['figure-to-equation', 'exact-distance-proof'],
     reward: { xp: 90, unlockTitle: 'Título: Modelador Métrico' },
   },
@@ -119,13 +119,13 @@ export const campaignNodes: CampaignNode[] = [
 export const gameQuests: GameQuestDefinition[] = [
   { id: 'quest-two-missions', title: 'Ritual de Estudo', description: 'Conclua 2 missões da jornada.', target: 2, rewardXp: 20, kind: 'missions' },
   { id: 'quest-perfect-mission', title: 'Precisão do Escriba', description: 'Conquiste 3 estrelas em uma missão.', target: 1, rewardXp: 15, kind: 'perfect' },
-  { id: 'quest-first-boss', title: 'Provação da Ala', description: 'Derrote um boss da campanha.', target: 1, rewardXp: 30, kind: 'boss' },
+  { id: 'quest-first-boss', title: 'Provação da Ala', description: 'Supere um chefe da campanha.', target: 1, rewardXp: 30, kind: 'boss' },
 ];
 
 export const achievementDefinitions: AchievementDefinition[] = [
   { id: 'first-mission', title: 'Primeiro Pergaminho', description: 'Concluiu a primeira missão.', icon: 'scroll' },
   { id: 'first-perfect', title: 'Geômetra Impecável', description: 'Conquistou três estrelas em uma missão.', icon: 'star' },
-  { id: 'first-boss', title: 'Quebra-Selos', description: 'Derrotou o primeiro boss.', icon: 'crown' },
+  { id: 'first-boss', title: 'Quebra-Selos', description: 'Superou o primeiro chefe.', icon: 'crown' },
   { id: 'five-missions', title: 'Explorador da Academia', description: 'Concluiu cinco missões.', icon: 'shield' },
   { id: 'seven-day-streak', title: 'Chama Constante', description: 'Estudou em sete dias consecutivos.', icon: 'flame' },
 ];
@@ -143,7 +143,9 @@ export function isNodeCompleted(progress: UserProgress, node: CampaignNode) {
 }
 
 export function getNextCampaignNode(progress: UserProgress) {
-  return campaignNodes.find((node) => !isNodeCompleted(progress, node));
+  return [...campaignNodes]
+    .sort((left, right) => left.order - right.order)
+    .find((node) => !isNodeCompleted(progress, node));
 }
 
 export function getCampaignNodeState(progress: UserProgress, node: CampaignNode): CampaignNodeState {
@@ -157,7 +159,7 @@ export function getCampaignNodeState(progress: UserProgress, node: CampaignNode)
 }
 
 export function activeQuest(progress: UserProgress) {
-  return gameQuests.find((quest) => !progress.quests[quest.id]?.completed) ?? gameQuests.at(-1);
+  return gameQuests.find((quest) => !progress.quests[quest.id]?.completed);
 }
 
 export function unlockedAchievement(progress: UserProgress, achievementId: string) {
@@ -177,4 +179,82 @@ export function getDueAdaptiveReview(progress: UserProgress, now = new Date()) {
     .sort((a, b) => b.recentErrors - a.recentErrors || a.nextReview.localeCompare(b.nextReview))
     .map((entry) => ({ conceptId: entry.conceptId, ...adaptiveReviewRoutes[entry.conceptId]! }))
     .at(0);
+}
+
+
+export function validateGameCampaign() {
+  const errors: string[] = [];
+  const chapterIds = new Set(campaignChapters.map((chapter) => chapter.id));
+  const nodeIds = new Set(campaignNodes.map((node) => node.id));
+  const completionIds = new Set<string>();
+  const orders = new Set<number>();
+  const chapterOrders = new Set<number>();
+  const listedNodes = new Map<string, number>();
+  const achievementIds = new Set(achievementDefinitions.map((item) => item.id));
+  const questIds = gameQuests.map((item) => item.id);
+
+  if (chapterIds.size !== campaignChapters.length) errors.push('Capítulos com IDs duplicados.');
+  if (nodeIds.size !== campaignNodes.length) errors.push('Missões com IDs duplicados.');
+  if (new Set(questIds).size !== questIds.length) errors.push('Quests com IDs duplicados.');
+
+  for (const chapter of campaignChapters) {
+    if (chapterOrders.has(chapter.order)) errors.push(`${chapter.id}: ordem de capítulo duplicada ${chapter.order}.`);
+    chapterOrders.add(chapter.order);
+    const local = new Set<string>();
+    for (const nodeId of chapter.nodeIds) {
+      if (local.has(nodeId)) errors.push(`${chapter.id}: missão duplicada ${nodeId}.`);
+      local.add(nodeId);
+      if (!nodeIds.has(nodeId)) errors.push(`${chapter.id}: missão inexistente ${nodeId}.`);
+      listedNodes.set(nodeId, (listedNodes.get(nodeId) ?? 0) + 1);
+      const node = campaignNodes.find((candidate) => candidate.id === nodeId);
+      if (node && node.chapterId !== chapter.id) errors.push(`${node.id}: chapterId não corresponde a ${chapter.id}.`);
+    }
+  }
+
+  for (const node of campaignNodes) {
+    if (!chapterIds.has(node.chapterId)) errors.push(`${node.id}: capítulo inexistente ${node.chapterId}.`);
+    if ((listedNodes.get(node.id) ?? 0) !== 1) errors.push(`${node.id}: deve aparecer exatamente uma vez nos capítulos.`);
+    if (orders.has(node.order)) errors.push(`${node.id}: ordem duplicada ${node.order}.`);
+    orders.add(node.order);
+    if (completionIds.has(node.completionId)) errors.push(`${node.id}: completionId duplicado ${node.completionId}.`);
+    completionIds.add(node.completionId);
+    if (!node.route.startsWith('/')) errors.push(`${node.id}: rota deve ser absoluta.`);
+    if (node.reward.xp <= 0 || !Number.isFinite(node.reward.xp)) errors.push(`${node.id}: XP deve ser positivo e finito.`);
+    if (node.reward.achievementId && !achievementIds.has(node.reward.achievementId)) {
+      errors.push(`${node.id}: conquista inexistente ${node.reward.achievementId}.`);
+    }
+    for (const prerequisiteId of node.prerequisites) {
+      const prerequisite = campaignNodes.find((candidate) => candidate.id === prerequisiteId);
+      if (!prerequisite) errors.push(`${node.id}: pré-requisito inexistente ${prerequisiteId}.`);
+      else if (prerequisite.order >= node.order) errors.push(`${node.id}: pré-requisito ${prerequisiteId} não antecede a missão.`);
+    }
+  }
+
+  const ordered = [...orders].sort((a, b) => a - b);
+  ordered.forEach((order, index) => {
+    if (order !== index + 1) errors.push(`Ordem da campanha não é contínua: esperado ${index + 1}, recebido ${order}.`);
+  });
+  const orderedChapters = [...chapterOrders].sort((a, b) => a - b);
+  orderedChapters.forEach((order, index) => {
+    if (order !== index + 1) errors.push(`Ordem dos capítulos não é contínua: esperado ${index + 1}, recebido ${order}.`);
+  });
+  for (const quest of gameQuests) {
+    if (quest.target <= 0 || !Number.isInteger(quest.target)) errors.push(`${quest.id}: target deve ser inteiro positivo.`);
+    if (quest.rewardXp < 0 || !Number.isFinite(quest.rewardXp)) errors.push(`${quest.id}: recompensa XP inválida.`);
+  }
+
+  const state = new Map<string, 'visiting' | 'visited'>();
+  const visit = (id: string, path: string[]) => {
+    if (state.get(id) === 'visiting') {
+      errors.push(`Ciclo na campanha: ${[...path, id].join(' -> ')}`);
+      return;
+    }
+    if (state.get(id) === 'visited') return;
+    state.set(id, 'visiting');
+    campaignNodes.find((node) => node.id === id)?.prerequisites.forEach((parent) => visit(parent, [...path, id]));
+    state.set(id, 'visited');
+  };
+  campaignNodes.forEach((node) => visit(node.id, []));
+
+  return errors;
 }

@@ -81,7 +81,12 @@ export function JourneyRunner({
   const advance = () => {
     if (feedback?.state !== 'correct') return;
     if (stageIndex === activeStages.length - 1) {
-      completeEncounter(effectiveJourneyId, allSkillIds, allSkillIds.map((id) => `codex-${id}`));
+      completeEncounter(
+        effectiveJourneyId,
+        allSkillIds,
+        allSkillIds.map((id) => `codex-${id}`),
+        `${window.location.pathname}${window.location.search}`,
+      );
       setCompleted(true);
       return;
     }
@@ -90,7 +95,7 @@ export function JourneyRunner({
     setFeedback(undefined);
     setHintUsed(false);
     setSelfConfidence(undefined);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   };
 
   if (completed) {

@@ -151,7 +151,7 @@ test('guided proof requires five justified mathematical steps', async ({ page })
     await page.getByRole('button', { name: choice, exact: true }).click();
     await page.getByRole('button', { name: 'Validar passo', exact: true }).click();
   }
-  await expect(page.getByText(/Boss Proof concluída/)).toBeVisible();
+  await expect(page.getByText(/Prova-chefe concluída/)).toBeVisible();
 });
 
 test('coordinate lab requires three geometric point selections', async ({ page }) => {
@@ -219,7 +219,7 @@ test('parallelism and crossover routes demand justification and transfer', async
 for (const width of [360, 390, 412]) {
   test(`mobile ${width}px has no horizontal overflow and touch targets are usable`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
-    for (const route of ['/map', '/mission/ordered-correspondence', '/profile', '/achievements', '/lab/line-forge']) {
+    for (const route of ['/map', '/mission/ordered-correspondence', '/encounter/ordered-correspondence', '/encounter/crossroads-opv', '/encounter/official-q15', '/profile', '/achievements', '/lab/line-forge', '/lab/parallelism', '/lab/exercise-48']) {
       await page.goto(route);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow, route).toBeLessThanOrEqual(1);
@@ -232,6 +232,28 @@ for (const width of [360, 390, 412]) {
     }
   });
 }
+
+
+test('ordered correspondence labels remain separated on narrow mobile screens', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 844 });
+  await page.goto('/mission/ordered-correspondence');
+  const labels = page.locator('.interactive-figure svg text');
+  const positions = await labels.evaluateAll((elements) => Object.fromEntries(elements.map((element) => {
+    const rect = element.getBoundingClientRect();
+    return [element.textContent ?? '', { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }];
+  })));
+  const c = positions.C;
+  const e = positions.E;
+  expect(c).toBeTruthy();
+  expect(e).toBeTruthy();
+  expect(e.left - c.right).toBeGreaterThanOrEqual(8);
+});
+
+test('unknown routes show a recoverable not-found screen', async ({ page }) => {
+  await page.goto('/territorio-que-nao-existe');
+  await expect(page.getByRole('heading', { name: /território não existe/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Voltar ao caminho' })).toBeVisible();
+});
 
 test('direct route refresh works and RPG assets load', async ({ page, request }) => {
   await page.goto('/proof/isosceles-base-angles?mode=training');

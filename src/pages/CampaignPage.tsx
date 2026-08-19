@@ -39,7 +39,7 @@ export function CampaignPage() {
             <div><dt>Erros comuns</dt><dd>{quest.commonErrors.join(' · ') || 'Sem tag específica'}</dd></div>
             <div><dt>Recuperação</dt><dd>{quest.recoverySkills.join(' · ') || 'Revisão da região'}</dd></div>
           </dl>
-          {quest.playableRoute ? <Link className="primary-action primary-action--wide" to={quest.playableRoute}>Entrar no encounter <ArrowRight size={16} /></Link> : <div className="content-planned"><ScrollText /><div><strong>Encounter catalogado</strong><p>Metadados e dependências prontos; a interação completa será aberta quando a névoa desta região for removida.</p></div></div>}
+          {quest.playableRoute ? <Link className="primary-action primary-action--wide" to={quest.playableRoute}>Entrar no encontro <ArrowRight size={16} /></Link> : <div className="content-planned"><ScrollText /><div><strong>Encontro catalogado</strong><p>Metadados e dependências prontos; a interação completa será aberta quando a névoa desta região for removida.</p></div></div>}
         </article>
       </section>
     );
@@ -61,12 +61,12 @@ export function CampaignPage() {
 
   return (
     <section className="page">
-      <div className="page-heading"><span className="eyebrow">Lista 1 · 43 questões transformadas</span><h1>Campanha Euclidiana</h1><p>Nove regiões convertem a lista em investigação, provas, construções e bosses. Questões sem interação completa permanecem sob névoa, não como lista estática disfarçada.</p></div>
+      <div className="page-heading"><span className="eyebrow">Lista 1 · 43 questões transformadas</span><h1>Campanha Euclidiana</h1><p>Nove regiões convertem a lista em investigação, provas, construções e provas-chefe. Questões sem interação completa permanecem sob névoa, não como lista estática disfarçada.</p></div>
       <div className="campaign-switch"><span>Campanha Euclidiana</span><Link to="/campaign/analytical">Ir para a Campanha Analítica <ArrowRight size={15} /></Link></div>
       <div className="campaign-region-grid">
         {euclideanCampaignRegions.map((item) => {
           const unlocked = regionUnlocked(item.order, progress.completedEncounterIds);
-          const content = <><span>{unlocked ? <MapPinned /> : <LockKeyhole />}</span><div><small>Região {String(item.order).padStart(2, '0')} · {item.subtitle}</small><h2>{item.title}</h2><p>{unlocked ? item.description : 'Complete os encounters da região anterior para dissipar a névoa.'}</p></div></>;
+          const content = <><span>{unlocked ? <MapPinned /> : <LockKeyhole />}</span><div><small>Região {String(item.order).padStart(2, '0')} · {item.subtitle}</small><h2>{item.title}</h2><p>{unlocked ? item.description : 'Complete os encontros da região anterior para dissipar a névoa.'}</p></div></>;
           return unlocked
             ? <Link key={item.id} to={`/campaign/euclidean/${item.id}`} className="campaign-region-card" style={{ '--campaign-accent': item.accent } as CSSProperties}>{content}</Link>
             : <article key={item.id} aria-label={`${item.title} bloqueada`} className="campaign-region-card is-locked" style={{ '--campaign-accent': item.accent } as CSSProperties}>{content}</article>;

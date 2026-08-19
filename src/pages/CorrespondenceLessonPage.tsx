@@ -53,7 +53,7 @@ const stages: LessonStage[] = [
   },
   {
     id: 'challenge', kicker: 'Desafio', title: 'Agora construa o mapa completo.',
-    text: 'No encounter, você aplicará a regra aos vértices, depois aos lados e finalmente aos ângulos. A missão só termina quando a cadeia inteira estiver correta.', highlights: [],
+    text: 'No encontro, você aplicará a regra aos vértices, depois aos lados e finalmente aos ângulos. A missão só termina quando a cadeia inteira estiver correta.', highlights: [],
   },
 ];
 
@@ -85,7 +85,7 @@ export function CorrespondenceLessonPage() {
     setStageIndex((index) => Math.min(stages.length - 1, index + 1));
     setSelectedId(undefined);
     setFeedback(undefined);
-    window.scrollTo({ top: 0, behavior: 'smooth' });
+    window.scrollTo({ top: 0, behavior: window.matchMedia('(prefers-reduced-motion: reduce)').matches ? 'auto' : 'smooth' });
   };
 
   return (

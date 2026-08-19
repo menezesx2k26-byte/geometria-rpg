@@ -46,14 +46,14 @@ export function MicroquestPage() {
         <h2>{microquest.prompt}</h2>
         <div className="microquest-options">
           {microquest.options.map((option) => (
-            <button type="button" key={option.id} className={selectedId === option.id ? 'is-selected' : ''} onClick={() => { setSelectedId(option.id); setFeedback(undefined); }} disabled={feedback === 'correct'}>{option.label}</button>
+            <button type="button" key={option.id} className={selectedId === option.id ? 'is-selected' : ''} aria-pressed={selectedId === option.id} onClick={() => { setSelectedId(option.id); setFeedback(undefined); }} disabled={feedback === 'correct'}>{option.label}</button>
           ))}
         </div>
         {feedback && <FeedbackPanel state={feedback}>{feedback === 'correct' ? microquest.successMessage : microquest.errorMessage}</FeedbackPanel>}
         {feedback === 'correct' && <MissionRewardCard completionId={`microquest:${microquest.id}`} />}
         {feedback === 'correct' && <CompetencyDebrief encounterId={`microquest:${microquest.id}`} />}
         {feedback === 'correct' ? (
-          <Link className="secondary-action secondary-action--wide" to={`/encounter/${microquest.returnEncounterId}`}>Rever encounter relacionado</Link>
+          <Link className="secondary-action secondary-action--wide" to={`/encounter/${microquest.returnEncounterId}`}>Rever encontro relacionado</Link>
         ) : (
           <button type="button" className="primary-action primary-action--wide" disabled={!selectedId} onClick={verify}>Verificar relação</button>
         )}

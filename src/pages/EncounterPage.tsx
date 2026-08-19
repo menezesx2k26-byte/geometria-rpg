@@ -158,6 +158,7 @@ function EncounterSession({ encounter }: { encounter: Encounter }) {
                     type="button"
                     key={skill.id}
                     className={selectedSkillId === skill.id ? 'is-selected' : ''}
+                    aria-pressed={selectedSkillId === skill.id}
                     onClick={() => {
                       if (selectedSkillId !== skill.id) setSelectedObjectIds([]);
                       setSelectedSkillId(skill.id);
@@ -225,7 +226,7 @@ export function EncounterPage() {
   if (!encounter) {
     return (
       <section className="page empty-page">
-        <h1>Encounter não encontrado</h1>
+        <h1>Encontro não encontrado</h1>
         <Link to="/map">Voltar ao mapa</Link>
       </section>
     );
