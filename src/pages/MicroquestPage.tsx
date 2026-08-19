@@ -6,6 +6,7 @@ import { MissionRewardCard } from '../components/campaign/MissionRewardCard';
 import { CompetencyDebrief } from '../components/learning/CompetencyDebrief';
 import { findMicroquest } from '../data/microquests';
 import { useProgress } from '../state/progress';
+import { isAcceptedOption } from '../engine/answerAcceptance';
 
 export function MicroquestPage() {
   const { id = '' } = useParams();
@@ -18,7 +19,7 @@ export function MicroquestPage() {
 
   const verify = () => {
     if (!selectedId) return;
-    const correct = selectedId === microquest.correctOptionId;
+    const correct = isAcceptedOption(selectedId, microquest.correctOptionId, microquest.id === 'correspondence-pairs' ? ['fd'] : []);
     recordAttempt(
       `microquest:${microquest.id}`,
       'single-competency',

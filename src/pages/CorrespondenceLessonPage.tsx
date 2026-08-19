@@ -5,6 +5,7 @@ import { GeometryFigure } from '../components/encounter/GeometryFigure';
 import { FeedbackPanel } from '../components/rpg';
 import { findEncounter } from '../data/bootstrap';
 import { useProgress } from '../state/progress';
+import { isAcceptedOption } from '../engine/answerAcceptance';
 
 interface LessonStage {
   id: string;
@@ -40,7 +41,7 @@ const stages: LessonStage[] = [
   {
     id: 'guided-side', kicker: 'Transferência', title: 'Os lados herdam seus extremos.',
     text: 'AB liga o primeiro ao segundo vértice. Seu correspondente deve ligar D a E.', highlights: ['vertex-a', 'vertex-b', 'vertex-d', 'vertex-e'], prompt: 'Qual lado corresponde a AB?',
-    options: [{ id: 'DF', label: 'DF' }, { id: 'EF', label: 'EF' }, { id: 'DE', label: 'DE' }], correctId: 'DE', success: 'Isso: AB ↔ DE. Os dois extremos foram preservados.',
+    options: [{ id: 'DF', label: 'DF' }, { id: 'EF', label: 'EF' }, { id: 'DE', label: 'DE' }, { id: 'ED', label: 'ED' }], correctId: 'DE', success: 'Isso: AB ↔ DE; ED nomeia o mesmo segmento. Os dois extremos foram preservados.',
   },
   {
     id: 'guided-angle', kicker: 'Transferência', title: 'O vértice nomeia o ângulo.',
@@ -71,7 +72,7 @@ export function CorrespondenceLessonPage() {
 
   const verify = () => {
     if (!selectedId || !stage.correctId) return;
-    const correct = selectedId === stage.correctId;
+    const correct = isAcceptedOption(selectedId, stage.correctId, stage.id === 'guided-side' ? ['ED'] : []);
     recordAttempt('ordered-correspondence', `lesson-${stage.id}`, [selectedId], correct, correct ? [] : ['ordered-correspondence'], {
       skillIds: ['triangle-congruence'],
       masteryDimensions: ['recognition', 'application'],
