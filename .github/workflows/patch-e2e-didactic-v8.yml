@@ -28,7 +28,6 @@ jobs:
 
           due_old = "await expect(page.getByRole('link', { name: /Continuar jornada.*A Ordem dos Vértices/ })).toBeVisible();"
           due_new = "await expect(page.getByRole('link', { name: /Continuar jornada.*Antes da Congruência/ })).toBeVisible();"
-          # Only the first occurrence belongs to the due-review test.
           text = text.replace(due_old, due_new, 1)
 
           replacement = r'''test('single path teaches before assessing correspondence and keeps first-contact errors non-punitive', async ({ page }) => {
@@ -77,7 +76,6 @@ jobs:
           if not pattern.search(text):
               raise SystemExit('Single-path E2E block not found')
           text = pattern.sub(replacement, text, count=1)
-          # replacement intentionally carries the next test prefix; restore its callback suffix already in source.
           path.write_text(text)
           PY
       - name: Verify TypeScript test syntax marker
@@ -89,3 +87,5 @@ jobs:
           git add tests/e2e/app.spec.ts
           git commit -m "test: align E2E with didactic bridges [e2e-patched]"
           git push origin HEAD:agent/didactic-sequence-v8
+
+# trigger: 2
