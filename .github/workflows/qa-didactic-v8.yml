@@ -31,3 +31,5 @@ jobs:
         run: npx playwright install chromium
       - name: E2E
         run: npm run test:e2e
+
+# trigger: didactic-v8
