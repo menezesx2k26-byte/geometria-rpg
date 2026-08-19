@@ -45,12 +45,12 @@ function tokenizeNumeric(value: string): NumericToken[] | null {
       continue;
     }
     const number = rest.match(/^(?:\d+(?:\.\d*)?|\.\d+)/);
-    if (number) {
+    if (number?.[0]) {
       tokens.push({ kind: 'number', value: Number(number[0]) });
       index += number[0].length;
       continue;
     }
-    const char = source[index];
+    const char = source[index] ?? '';
     if ('+-*/()'.includes(char)) {
       tokens.push({ kind: 'op', value: char });
       index += 1;
@@ -150,7 +150,8 @@ export function scalarEquivalent(input: string, expected: number, variable?: str
   if (normalized.includes('=')) {
     const rawParts = input.split('=').map((part) => part.trim());
     if (rawParts.length !== 2) return false;
-    const [left, right] = rawParts;
+    const left = rawParts[0] ?? '';
+    const right = rawParts[1] ?? '';
     const leftNorm = normalizeMathText(left);
     const rightNorm = normalizeMathText(right);
     if (variable && leftNorm === variable.toLowerCase()) expression = right;
@@ -200,8 +201,8 @@ export function parseLinearEquation(value: string): Line | null {
   const source = value.trim().replace(/^[rs]\s*:\s*/i, '');
   const parts = source.split('=');
   if (parts.length !== 2) return null;
-  const left = parseLinearSide(parts[0]);
-  const right = parseLinearSide(parts[1]);
+  const left = parseLinearSide(parts[0] ?? '');
+  const right = parseLinearSide(parts[1] ?? '');
   if (!left || !right) return null;
   const line = { a: left.x - right.x, b: left.y - right.y, c: left.c - right.c };
   if (Math.abs(line.a) < EPSILON && Math.abs(line.b) < EPSILON) return null;
@@ -218,8 +219,8 @@ export function parsePoint(value: string): { x: number; y: number } | null {
   const separator = cleaned.includes(';') ? ';' : ',';
   const parts = cleaned.split(separator).map((part) => part.trim());
   if (parts.length !== 2) return null;
-  const x = parseNumericExpression(parts[0]);
-  const y = parseNumericExpression(parts[1]);
+  const x = parseNumericExpression(parts[0] ?? '');
+  const y = parseNumericExpression(parts[1] ?? '');
   if (x === null || y === null) return null;
   return { x, y };
 }
@@ -236,8 +237,9 @@ function lettersOnly(value: string) {
 export function segmentEquivalent(input: string, first: string, second: string) {
   const letters = lettersOnly(input);
   if (letters.length !== 2) return false;
-  return (letters[0] === first.toUpperCase() && letters[1] === second.toUpperCase()) ||
-    (letters[0] === second.toUpperCase() && letters[1] === first.toUpperCase());
+  const a = letters[0] ?? '';
+  const b = letters[1] ?? '';
+  return (a === first.toUpperCase() && b === second.toUpperCase()) || (a === second.toUpperCase() && b === first.toUpperCase());
 }
 
 export function angleEquivalent(input: string, canonical: string) {
@@ -245,15 +247,22 @@ export function angleEquivalent(input: string, canonical: string) {
   const expected = lettersOnly(canonical);
   if (expected.length === 1) return actual === expected || (actual.length === 3 && actual[1] === expected);
   if (expected.length !== 3 || actual.length !== 3) return false;
-  return actual[1] === expected[1] && new Set([actual[0], actual[2]]).size === new Set([expected[0], expected[2]]).size &&
-    [actual[0], actual[2]].every((letter) => [expected[0], expected[2]].includes(letter));
+  const actualFirst = actual[0] ?? '';
+  const actualVertex = actual[1] ?? '';
+  const actualLast = actual[2] ?? '';
+  const expectedFirst = expected[0] ?? '';
+  const expectedVertex = expected[1] ?? '';
+  const expectedLast = expected[2] ?? '';
+  return actualVertex === expectedVertex && [actualFirst, actualLast].every((letter) => [expectedFirst, expectedLast].includes(letter));
 }
 
 function extractTrianglePair(value: string): [string, string] | null {
   const normalized = stripDiacritics(value).toUpperCase().replace(/TRIANGULO/g, '').replace(/CONGRUENTEA/g, '~').replace(/\s+/g, '');
   const matches = normalized.match(/[A-Z]{3}/g);
   if (!matches || matches.length !== 2) return null;
-  return [matches[0], matches[1]];
+  const first = matches[0];
+  const second = matches[1];
+  return first && second ? [first, second] : null;
 }
 
 export function triangleCorrespondenceEquivalent(input: string, canonicalLeft: string, canonicalRight: string) {
@@ -262,10 +271,10 @@ export function triangleCorrespondenceEquivalent(input: string, canonicalLeft: s
   const [left, right] = pair;
   const expectedLeft = canonicalLeft.toUpperCase();
   const expectedRight = canonicalRight.toUpperCase();
-  const direct = new Map(expectedLeft.split('').map((letter, index) => [letter, expectedRight[index]]));
-  const inverse = new Map(expectedRight.split('').map((letter, index) => [letter, expectedLeft[index]]));
+  const direct = new Map<string, string>(expectedLeft.split('').map((letter, index) => [letter, expectedRight[index] ?? '']));
+  const inverse = new Map<string, string>(expectedRight.split('').map((letter, index) => [letter, expectedLeft[index] ?? '']));
   const preserves = (a: string, b: string, map: Map<string, string>) =>
-    new Set(a).size === 3 && new Set(b).size === 3 && a.split('').every((letter, index) => map.get(letter) === b[index]);
+    new Set(a).size === 3 && new Set(b).size === 3 && a.split('').every((letter, index) => map.get(letter) === (b[index] ?? ''));
   return preserves(left, right, direct) || preserves(left, right, inverse);
 }
 
@@ -273,8 +282,10 @@ export function angleCongruenceEquivalent(input: string, first: string, second: 
   const normalized = stripDiacritics(input).toUpperCase().replace(/ANGULO/g, '');
   const matches = normalized.match(/[A-Z]{3}/g);
   if (!matches || matches.length < 2) return false;
-  return (angleEquivalent(matches[0], first) && angleEquivalent(matches[1], second)) ||
-    (angleEquivalent(matches[0], second) && angleEquivalent(matches[1], first));
+  const firstMatch = matches[0] ?? '';
+  const secondMatch = matches[1] ?? '';
+  return (angleEquivalent(firstMatch, first) && angleEquivalent(secondMatch, second)) ||
+    (angleEquivalent(firstMatch, second) && angleEquivalent(secondMatch, first));
 }
 
 export function keywordEquivalent(input: string, aliases: readonly string[]) {
@@ -283,6 +294,11 @@ export function keywordEquivalent(input: string, aliases: readonly string[]) {
 }
 
 export function unorderedPairEquivalent<T>(left: readonly T[], right: readonly T[], equals: (a: T, b: T) => boolean) {
-  return left.length === 2 && right.length === 2 &&
-    ((equals(left[0], right[0]) && equals(left[1], right[1])) || (equals(left[0], right[1]) && equals(left[1], right[0])));
+  if (left.length !== 2 || right.length !== 2) return false;
+  const left0 = left[0];
+  const left1 = left[1];
+  const right0 = right[0];
+  const right1 = right[1];
+  if (left0 === undefined || left1 === undefined || right0 === undefined || right1 === undefined) return false;
+  return (equals(left0, right0) && equals(left1, right1)) || (equals(left0, right1) && equals(left1, right0));
 }
