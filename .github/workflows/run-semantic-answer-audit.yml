@@ -11,6 +11,7 @@ permissions:
 
 jobs:
   audit:
+    if: github.head_ref == 'agent/semantic-answer-acceptance'
     runs-on: ubuntu-latest
     timeout-minutes: 40
     steps:
@@ -24,22 +25,334 @@ jobs:
           node-version: 22
           cache: npm
 
-      - name: Extract and apply prepared patch
+      - name: Apply semantic answer patch
         shell: bash
         run: |
+          if [ -f src/engine/answerAcceptance.ts ]; then
+            echo 'Semantic patch already applied; validating current branch.'
+            exit 0
+          fi
           python3 - <<'PY'
           from pathlib import Path
-          import textwrap
-          source = Path('.github/workflows/semantic-answer-audit.yml').read_text(encoding='utf-8')
-          start_marker = "          python3 - <<'PY'\n"
-          end_marker = "\n          PY\n\n      - name: Install and validate"
-          if start_marker not in source or end_marker not in source:
-              raise SystemExit('Could not locate prepared patch block')
-          code = source.split(start_marker, 1)[1].split(end_marker, 1)[0]
-          code = textwrap.dedent(code)
-          Path('/tmp/semantic_patch.py').write_text(code, encoding='utf-8')
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              p = Path(path)
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_text(text, encoding='utf-8')
+
+          def replace_once(path, old, new):
+              text = read(path)
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected one occurrence, found {count}: {old[:100]!r}')
+              write(path, text.replace(old, new, 1))
+
+          write('src/engine/answerAcceptance.ts', '''export function isAcceptedOption(
+            selectedId: string | undefined,
+            canonicalId: string,
+            acceptedAlternativeIds: readonly string[] = [],
+          ) {
+            return Boolean(selectedId && (selectedId === canonicalId || acceptedAlternativeIds.includes(selectedId)));
+          }
+
+          export function sameMembers(left: readonly string[], right: readonly string[]) {
+            if (left.length !== right.length) return false;
+            const counts = new Map<string, number>();
+            for (const value of left) counts.set(value, (counts.get(value) ?? 0) + 1);
+            for (const value of right) {
+              const count = counts.get(value) ?? 0;
+              if (count <= 0) return false;
+              if (count === 1) counts.delete(value);
+              else counts.set(value, count - 1);
+            }
+            return counts.size === 0;
+          }
+
+          export function matchesUnorderedGroups(selectedIds: readonly string[], groups: readonly (readonly string[])[]) {
+            const total = groups.reduce((sum, group) => sum + group.length, 0);
+            if (selectedIds.length !== total || groups.some((group) => group.length === 0)) return false;
+            const match = (offset: number, remaining: readonly (readonly string[])[]): boolean => {
+              if (!remaining.length) return offset === selectedIds.length;
+              return remaining.some((group, index) => {
+                const candidate = selectedIds.slice(offset, offset + group.length);
+                if (!sameMembers(candidate, group)) return false;
+                return match(offset + group.length, [...remaining.slice(0, index), ...remaining.slice(index + 1)]);
+              });
+            };
+            return match(0, groups);
+          }
+
+          const journeyAlternatives: Readonly<Record<string, readonly string[]>> = {
+            'choose-distances': ['distance-all'],
+          };
+
+          export function acceptedJourneyOptionIds(stageId: string) {
+            return journeyAlternatives[stageId] ?? [];
+          }
+          ''')
+
+          write('src/engine/answerAcceptance.test.ts', '''import { describe, expect, it } from 'vitest';
+          import { acceptedJourneyOptionIds, isAcceptedOption, matchesUnorderedGroups, sameMembers } from './answerAcceptance';
+
+          describe('semantic answer acceptance', () => {
+            it('accepts canonical and explicit equivalent option ids', () => {
+              expect(isAcceptedOption('a', 'a', ['b'])).toBe(true);
+              expect(isAcceptedOption('b', 'a', ['b'])).toBe(true);
+              expect(isAcceptedOption('c', 'a', ['b'])).toBe(false);
+            });
+
+            it('compares members as a multiset', () => {
+              expect(sameMembers(['A', 'B', 'C'], ['C', 'A', 'B'])).toBe(true);
+              expect(sameMembers(['A', 'A'], ['A', 'B'])).toBe(false);
+            });
+
+            it('accepts correct correspondence pairs in any pair order and orientation', () => {
+              const groups = [['A', 'D'], ['B', 'E'], ['C', 'F']];
+              expect(matchesUnorderedGroups(['D', 'A', 'F', 'C', 'E', 'B'], groups)).toBe(true);
+              expect(matchesUnorderedGroups(['B', 'E', 'A', 'D', 'C', 'F'], groups)).toBe(true);
+              expect(matchesUnorderedGroups(['A', 'B', 'D', 'E', 'C', 'F'], groups)).toBe(false);
+            });
+
+            it('marks the existing valid-but-inefficient distance strategy as accepted', () => {
+              expect(acceptedJourneyOptionIds('choose-distances')).toContain('distance-all');
+            });
+          });
+          ''')
+
+          write('src/engine/encounterEngine.ts', '''import type { Encounter, EncounterApplicationRule, SemanticErrorRule } from '../types/domain';
+          import { matchesUnorderedGroups, sameMembers } from './answerAcceptance';
+
+          export interface ApplicationResult {
+            correct: boolean;
+            kind: 'accepted' | 'complete' | 'no-skill' | 'wrong-skill' | 'missing-relation' | 'wrong-order' | 'wrong-objects';
+            message: string;
+            ruleId?: string;
+            producedRelationIds: string[];
+          }
+
+          const semanticObjectGroups: Readonly<Record<string, readonly (readonly string[])[]>> = {
+            'rule-correspondence': [['vertex-a', 'vertex-d'], ['vertex-b', 'vertex-e'], ['vertex-c', 'vertex-f']],
+            'rule-side-correspondence': [['side-ab', 'side-de'], ['side-bc', 'side-ef'], ['side-ac', 'side-df']],
+            'rule-angle-correspondence': [['angle-a', 'angle-d'], ['angle-b', 'angle-e'], ['angle-c', 'angle-f']],
+          };
+
+          function semanticMessage(rule: EncounterApplicationRule, kind: SemanticErrorRule['when']) {
+            return rule.semanticErrors.find((error) => error.when === kind)?.message ?? 'A aplicação ainda não é válida.';
+          }
+
+          export function validateApplication(
+            encounter: Encounter,
+            knownRelationIds: string[],
+            selectedSkillId: string | undefined,
+            selectedObjectIds: string[],
+          ): ApplicationResult {
+            const pendingRules = encounter.applicationRules.filter(
+              (rule) => !rule.producesRelationIds.every((id) => knownRelationIds.includes(id)),
+            );
+            if (!pendingRules.length) {
+              return { correct: false, kind: 'complete', message: 'Todas as relações necessárias já foram registradas.', producedRelationIds: [] };
+            }
+            if (!selectedSkillId) {
+              return { correct: false, kind: 'no-skill', message: 'Escolha uma skill do inventário antes de selecionar os objetos.', producedRelationIds: [] };
+            }
+
+            const rule = pendingRules.find((candidate) => candidate.skillId === selectedSkillId) ?? pendingRules[0];
+            if (!rule) return { correct: false, kind: 'complete', message: 'Nenhuma aplicação está disponível neste momento.', producedRelationIds: [] };
+            if (rule.skillId !== selectedSkillId) {
+              return { correct: false, kind: 'wrong-skill', message: semanticMessage(rule, 'wrong-skill'), ruleId: rule.id, producedRelationIds: [] };
+            }
+            const missingRelations = rule.requiresRelationIds.filter((id) => !knownRelationIds.includes(id));
+            if (missingRelations.length) {
+              return { correct: false, kind: 'missing-relation', message: semanticMessage(rule, 'missing-relation'), ruleId: rule.id, producedRelationIds: [] };
+            }
+
+            const groups = semanticObjectGroups[rule.id];
+            if (groups) {
+              if (!matchesUnorderedGroups(selectedObjectIds, groups)) {
+                const errorKind = sameMembers(rule.objectIds, selectedObjectIds) ? 'wrong-order' : 'wrong-objects';
+                return { correct: false, kind: errorKind, message: semanticMessage(rule, errorKind), ruleId: rule.id, producedRelationIds: [] };
+              }
+            } else if (rule.orderMatters) {
+              const exactOrder = rule.objectIds.length === selectedObjectIds.length && rule.objectIds.every((id, index) => selectedObjectIds[index] === id);
+              if (!exactOrder) {
+                const errorKind = sameMembers(rule.objectIds, selectedObjectIds) ? 'wrong-order' : 'wrong-objects';
+                return { correct: false, kind: errorKind, message: semanticMessage(rule, errorKind), ruleId: rule.id, producedRelationIds: [] };
+              }
+            } else if (!sameMembers(rule.objectIds, selectedObjectIds)) {
+              return { correct: false, kind: 'wrong-objects', message: semanticMessage(rule, 'wrong-objects'), ruleId: rule.id, producedRelationIds: [] };
+            }
+
+            return { correct: true, kind: 'accepted', message: rule.successMessage, ruleId: rule.id, producedRelationIds: rule.producesRelationIds };
+          }
+          ''')
+
+          replace_once('src/components/learning/JourneyRunner.tsx',
+            "import { useProgress } from '../../state/progress';",
+            "import { useProgress } from '../../state/progress';\nimport { acceptedJourneyOptionIds, isAcceptedOption } from '../../engine/answerAcceptance';")
+          replace_once('src/components/learning/JourneyRunner.tsx',
+            "    const correct = selectedId === stage.correctOptionId;",
+            "    const correct = isAcceptedOption(selectedId, stage.correctOptionId, acceptedJourneyOptionIds(stage.id));")
+
+          replace_once('src/data/officialQuest15.ts',
+            "  correctId: string;\n  success: string;",
+            "  correctId: string;\n  acceptedAlternativeIds?: string[];\n  success: string;")
+          p = 'src/data/officialQuest15.ts'
+          text = read(p)
+          old = "{ id: 'q15-order', prompt: 'Qual escrita preserva a correspondência C↔C, B↔D, A↔E?', options: [{ id: 'order', label: '△CBA ≅ △CDE' }, { id: 'flip', label: '△ABC ≅ △CDE' }, { id: 'mix', label: '△BCA ≅ △CDE' }], correctId: 'order', success: 'Correspondência ordenada registrada.', error: 'Compare letra por letra: C com C, B com D e A com E.', relation: 'C↔C · B↔D · A↔E' },"
+          new = "{ id: 'q15-order', prompt: 'Qual escrita preserva a correspondência C↔C, B↔D, A↔E?', options: [{ id: 'order', label: '△CBA ≅ △CDE' }, { id: 'order-bac-dec', label: '△BAC ≅ △DEC' }, { id: 'order-acb-ecd', label: '△ACB ≅ △ECD' }, { id: 'flip', label: '△ABC ≅ △CDE' }, { id: 'mix', label: '△BCA ≅ △CDE' }], correctId: 'order', acceptedAlternativeIds: ['order-bac-dec', 'order-acb-ecd'], success: 'Correspondência preservada: permutações sincronizadas dos dois triângulos são equivalentes.', error: 'Compare letra por letra: cada posição deve manter C↔C, B↔D e A↔E.', relation: 'C↔C · B↔D · A↔E' },"
+          if text.count(old) != 1: raise SystemExit('officialQuest15 q15-order pattern not found')
+          write(p, text.replace(old, new, 1))
+          replace_once('src/pages/OfficialQuest15Page.tsx',
+            "import type { MasteryDimension } from '../types/domain';",
+            "import type { MasteryDimension } from '../types/domain';\nimport { isAcceptedOption } from '../engine/answerAcceptance';")
+          replace_once('src/pages/OfficialQuest15Page.tsx',
+            "    const correct = selectedId === step.correctId;",
+            "    const correct = isAcceptedOption(selectedId, step.correctId, step.acceptedAlternativeIds);")
+
+          p = 'src/data/microquests.ts'
+          text = read(p)
+          old = "options: [{ id: 'de', label: 'DE' }, { id: 'df', label: 'DF' }, { id: 'ef', label: 'EF' }],\n    correctOptionId: 'df',\n    successMessage: 'A ocupa a posição de D e C ocupa a posição de F; portanto AC ↔ DF.',"
+          new = "options: [{ id: 'de', label: 'DE' }, { id: 'df', label: 'DF' }, { id: 'fd', label: 'FD' }, { id: 'ef', label: 'EF' }],\n    correctOptionId: 'df',\n    successMessage: 'A ocupa a posição de D e C ocupa a posição de F; portanto AC ↔ DF; FD nomeia o mesmo segmento.',"
+          if text.count(old) != 1: raise SystemExit('microquest correspondence pattern not found')
+          write(p, text.replace(old, new, 1))
+          replace_once('src/pages/MicroquestPage.tsx',
+            "import { useProgress } from '../state/progress';",
+            "import { useProgress } from '../state/progress';\nimport { isAcceptedOption } from '../engine/answerAcceptance';")
+          replace_once('src/pages/MicroquestPage.tsx',
+            "    const correct = selectedId === microquest.correctOptionId;",
+            "    const correct = isAcceptedOption(selectedId, microquest.correctOptionId, microquest.id === 'correspondence-pairs' ? ['fd'] : []);")
+
+          p = 'src/pages/CorrespondenceLessonPage.tsx'
+          text = read(p)
+          old = "options: [{ id: 'DF', label: 'DF' }, { id: 'EF', label: 'EF' }, { id: 'DE', label: 'DE' }], correctId: 'DE', success: 'Isso: AB ↔ DE. Os dois extremos foram preservados.',"
+          new = "options: [{ id: 'DF', label: 'DF' }, { id: 'EF', label: 'EF' }, { id: 'DE', label: 'DE' }, { id: 'ED', label: 'ED' }], correctId: 'DE', success: 'Isso: AB ↔ DE; ED nomeia o mesmo segmento. Os dois extremos foram preservados.',"
+          if text.count(old) != 1: raise SystemExit('lesson segment pattern not found')
+          text = text.replace(old, new, 1)
+          text = text.replace("import { useProgress } from '../state/progress';", "import { useProgress } from '../state/progress';\nimport { isAcceptedOption } from '../engine/answerAcceptance';", 1)
+          text = text.replace("    const correct = selectedId === stage.correctId;", "    const correct = isAcceptedOption(selectedId, stage.correctId, stage.id === 'guided-side' ? ['ED'] : []);", 1)
+          write(p, text)
+
+          p = 'src/engine/proofEngine.ts'
+          text = read(p)
+          marker = "function matchesAlternative(step: ProofStep, candidate: ProofCandidate, alternative: ProofStepAlternative) {"
+          helper = """function equivalentJustification(expected: ProofJustification | undefined, actual: ProofJustification | undefined) {
+            if (expected === actual) return true;
+            return actual === 'definition' && ['midpoint', 'angleBisector', 'perpendicular'].includes(expected ?? '');
+          }
+
+          """
+          if text.count(marker) != 1: raise SystemExit('proofEngine marker not found')
+          text = text.replace(marker, helper + marker, 1)
+          text = text.replace("(alternative.justification ?? step.justification) === candidate.justification;", "equivalentJustification(alternative.justification ?? step.justification, candidate.justification);", 2)
+          text = text.replace("if (candidate.justification !== step.justification) {", "if (!equivalentJustification(step.justification, candidate.justification)) {", 2)
+          write(p, text)
+
+          write('src/engine/semanticAcceptance.test.ts', '''import { describe, expect, it } from 'vitest';
+          import { encounters } from '../data/bootstrap';
+          import { proofs } from '../data/proofs';
+          import { validateApplication } from './encounterEngine';
+          import { validateProofStep } from './proofEngine';
+
+          describe('mathematically equivalent answer paths', () => {
+            it('accepts correspondence pairs in any pair order and orientation', () => {
+              const encounter = encounters.find((item) => item.id === 'ordered-correspondence');
+              expect(encounter).toBeDefined();
+              if (!encounter) return;
+              expect(validateApplication(encounter, [], 'triangle-congruence', ['vertex-d', 'vertex-a', 'vertex-f', 'vertex-c', 'vertex-e', 'vertex-b']))
+                .toMatchObject({ correct: true, producedRelationIds: ['relation-correspondence'] });
+            });
+
+            it('rejects wrong pairings even when the same six vertices are present', () => {
+              const encounter = encounters.find((item) => item.id === 'ordered-correspondence');
+              expect(encounter).toBeDefined();
+              if (!encounter) return;
+              expect(validateApplication(encounter, [], 'triangle-congruence', ['vertex-a', 'vertex-b', 'vertex-d', 'vertex-e', 'vertex-c', 'vertex-f']))
+                .toMatchObject({ correct: false, kind: 'wrong-order' });
+            });
+
+            it('accepts generic Definição when it names the same point-midpoint definition', () => {
+              const proof = proofs.find((item) => item.id === 'isosceles-cevian');
+              const step = proof?.steps.find((item) => item.id === 'midpoint-d');
+              expect(proof).toBeDefined();
+              expect(step).toBeDefined();
+              if (!proof || !step) return;
+              expect(validateProofStep(proof, step, ['base-parts'], { involvedObjects: [], justification: 'definition', answerIds: [] }))
+                .toMatchObject({ correct: true, kind: 'accepted' });
+            });
+          });
+          ''')
+
+          write('tests/e2e/semantic-answers.spec.ts', '''import { expect, test, type Page } from '@playwright/test';
+
+          async function resetProgress(page: Page) {
+            await page.goto('/review');
+            await page.getByRole('button', { name: /Reiniciar progresso/ }).click();
+            await page.getByRole('button', { name: 'Sim, reiniciar', exact: true }).click();
+          }
+
+          test('valid but noncanonical strategy is not recorded as an error', async ({ page }) => {
+            await resetProgress(page);
+            await page.goto('/lab/exercise-48?focus=choose-distances');
+            await page.getByRole('button', { name: 'Todas as dez distâncias entre os cinco pontos', exact: true }).click();
+            await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+            await expect(page.getByText(/Isso é válido, porém/)).toBeVisible();
+            const stored = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v4') ?? '{}'));
+            expect(stored.attempts.at(-1)?.correct).toBe(true);
+          });
+
+          test('ordered correspondence accepts pair order and orientation alternatives', async ({ page }) => {
+            await resetProgress(page);
+            await page.goto('/encounter/ordered-correspondence');
+            await page.getByRole('button', { name: 'Congruência', exact: true }).click();
+            for (const name of ['D', 'A', 'F', 'C', 'E', 'B']) await page.getByRole('button', { name, exact: true }).click();
+            await page.getByRole('button', { name: 'Confirmar aplicação', exact: true }).click();
+            await expect(page.getByText(/Correspondência registrada/)).toBeVisible();
+          });
+
+          test('segment orientation FD is accepted as the same segment as DF', async ({ page }) => {
+            await resetProgress(page);
+            await page.goto('/microquest/correspondence-pairs');
+            await page.getByRole('button', { name: 'FD', exact: true }).click();
+            await page.getByRole('button', { name: 'Verificar relação', exact: true }).click();
+            await expect(page.getByText(/FD nomeia o mesmo segmento/)).toBeVisible();
+          });
+
+          test('Q15 accepts a synchronized equivalent triangle notation', async ({ page }) => {
+            await resetProgress(page);
+            await page.goto('/encounter/official-q15');
+            for (const choice of ['∠BCA ≅ ∠DCE por OPV', 'ALA']) {
+              await page.getByRole('button', { name: choice, exact: true }).click();
+              await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+              await page.getByRole('button', { name: 'Registrar e avançar', exact: true }).click();
+            }
+            await page.getByRole('button', { name: '△BAC ≅ △DEC', exact: true }).click();
+            await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+            await expect(page.getByText(/permutações sincronizadas/)).toBeVisible();
+          });
+          ''')
+
+          write('ANSWER_ACCEPTANCE_AUDIT.md', '''# Auditoria de aceitação de respostas matematicamente equivalentes
+
+          ## Diagnóstico
+          O aplicativo misturava validação semântica e validação por forma canônica. O laboratório cartesiano já aceitava qualquer ponto que satisfizesse a propriedade pedida, mas outros fluxos comparavam IDs ou sequências exatas.
+
+          ## Falsos negativos encontrados
+          - correspondência ordenada exigia uma sequência exata de cliques, mesmo quando os pares corretos eram registrados em outra ordem ou orientação;
+          - uma opção do Exercício 48 era descrita pelo próprio feedback como matematicamente válida, porém era registrada como erro por não ser a estratégia canônica;
+          - DF/FD e DE/ED podiam ser tratados como respostas diferentes apesar de nomearem o mesmo segmento;
+          - a Questão 15 mostrava apenas uma notação de congruência embora permutações sincronizadas preservem a mesma correspondência;
+          - em prova guiada, a justificativa genérica “Definição” podia ser recusada mesmo quando era a mesma definição específica disponível no passo.
+
+          ## Política aplicada
+          Uma forma canônica pode continuar sendo preferida e explicada, mas uma resposta é reprovada apenas quando a relação matemática está errada. Estratégias válidas porém menos eficientes são aceitas com feedback pedagógico, sem gerar diagnóstico de erro.
+
+          ## Limite atual
+          O produto ainda é majoritariamente de alternativas clicáveis. Não existe um parser geral de entrada algébrica livre. Quando entrada textual for adicionada, equações, frações, radicais e provas deverão ser avaliados por equivalência semântica (por exemplo, usando `equivalentLines` para retas), nunca por comparação de strings.
+          ''')
           PY
-          python3 /tmp/semantic_patch.py
 
       - name: Full QA
         shell: bash
@@ -70,7 +383,7 @@ jobs:
           if grep -q '^status=success$' .semantic-answer-status.txt; then
             rm -f .semantic-answer-trigger .semantic-answer-status.txt .semantic-answer-validation.log .github/workflows/semantic-answer-audit.yml
             git add -A
-            git commit -m 'fix: accept mathematically equivalent answers'
+            git commit -m 'fix: accept mathematically equivalent answers' || true
             git push origin HEAD:agent/semantic-answer-acceptance
           else
             rm -f .semantic-answer-trigger
