@@ -1,0 +1,529 @@
+name: Semantic Answer Acceptance Audit
+
+on:
+  push:
+    branches:
+      - agent/semantic-answer-acceptance
+    paths:
+      - '.semantic-answer-trigger'
+
+permissions:
+  contents: write
+
+jobs:
+  patch-and-qa:
+    runs-on: ubuntu-latest
+    timeout-minutes: 35
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+
+      - name: Apply semantic acceptance patch
+        shell: bash
+        run: |
+          python3 - <<'PY'
+          from pathlib import Path
+          import re
+
+          def read(path):
+              return Path(path).read_text(encoding='utf-8')
+
+          def write(path, text):
+              p = Path(path)
+              p.parent.mkdir(parents=True, exist_ok=True)
+              p.write_text(text, encoding='utf-8')
+
+          def replace_once(path, old, new):
+              text = read(path)
+              count = text.count(old)
+              if count != 1:
+                  raise SystemExit(f'{path}: expected exactly one occurrence, found {count}: {old[:100]!r}')
+              write(path, text.replace(old, new, 1))
+
+          # Shared semantic acceptance helpers.
+          write('src/engine/answerAcceptance.ts', '''export function isAcceptedOption(
+            selectedId: string | undefined,
+            canonicalId: string,
+            acceptedAlternativeIds: readonly string[] = [],
+          ) {
+            return Boolean(selectedId && (selectedId === canonicalId || acceptedAlternativeIds.includes(selectedId)));
+          }
+
+          export function sameMembers(left: readonly string[], right: readonly string[]) {
+            if (left.length !== right.length) return false;
+            const counts = new Map<string, number>();
+            for (const value of left) counts.set(value, (counts.get(value) ?? 0) + 1);
+            for (const value of right) {
+              const count = counts.get(value) ?? 0;
+              if (count <= 0) return false;
+              if (count === 1) counts.delete(value);
+              else counts.set(value, count - 1);
+            }
+            return counts.size === 0;
+          }
+
+          export function matchesUnorderedGroups(selectedIds: readonly string[], groups: readonly (readonly string[])[]) {
+            const total = groups.reduce((sum, group) => sum + group.length, 0);
+            if (selectedIds.length !== total || groups.some((group) => group.length === 0)) return false;
+
+            const matchFrom = (offset: number, remaining: readonly (readonly string[])[]): boolean => {
+              if (!remaining.length) return offset === selectedIds.length;
+              return remaining.some((group, index) => {
+                const candidate = selectedIds.slice(offset, offset + group.length);
+                if (!sameMembers(candidate, group)) return false;
+                const next = [...remaining.slice(0, index), ...remaining.slice(index + 1)];
+                return matchFrom(offset + group.length, next);
+              });
+            };
+
+            return matchFrom(0, groups);
+          }
+          ''')
+
+          write('src/engine/answerAcceptance.test.ts', '''import { describe, expect, it } from 'vitest';
+          import { isAcceptedOption, matchesUnorderedGroups, sameMembers } from './answerAcceptance';
+
+          describe('semantic answer acceptance', () => {
+            it('accepts canonical and explicitly equivalent option ids', () => {
+              expect(isAcceptedOption('canonical', 'canonical', ['equivalent'])).toBe(true);
+              expect(isAcceptedOption('equivalent', 'canonical', ['equivalent'])).toBe(true);
+              expect(isAcceptedOption('wrong', 'canonical', ['equivalent'])).toBe(false);
+            });
+
+            it('compares members as a multiset rather than by presentation order', () => {
+              expect(sameMembers(['A', 'B', 'C'], ['C', 'A', 'B'])).toBe(true);
+              expect(sameMembers(['A', 'A'], ['A', 'B'])).toBe(false);
+            });
+
+            it('accepts correct correspondence pairs in any pair order and orientation', () => {
+              const groups = [['A', 'D'], ['B', 'E'], ['C', 'F']];
+              expect(matchesUnorderedGroups(['D', 'A', 'F', 'C', 'E', 'B'], groups)).toBe(true);
+              expect(matchesUnorderedGroups(['B', 'E', 'A', 'D', 'C', 'F'], groups)).toBe(true);
+            });
+
+            it('rejects a globally identical object set when the pairings are wrong', () => {
+              const groups = [['A', 'D'], ['B', 'E'], ['C', 'F']];
+              expect(matchesUnorderedGroups(['A', 'B', 'D', 'E', 'C', 'F'], groups)).toBe(false);
+            });
+          });
+          ''')
+
+          # Domain model: semantic object groups and alternative correct option ids.
+          replace_once('src/types/domain.ts',
+            "  objectIds: string[];\n  orderMatters?: boolean;\n  requiresRelationIds: string[];",
+            "  objectIds: string[];\n  objectGroups?: string[][];\n  orderMatters?: boolean;\n  requiresRelationIds: string[];")
+          replace_once('src/types/domain.ts',
+            "  correctOptionId: string;\n  successMessage: string;\n  errorMessage: string;",
+            "  correctOptionId: string;\n  acceptedAlternativeIds?: string[];\n  successMessage: string;\n  errorMessage: string;")
+
+          # Encounter engine: select the matching semantic rule, then validate grouped correspondences.
+          p = 'src/engine/encounterEngine.ts'
+          text = read(p)
+          text = text.replace(
+            "import type { Encounter, EncounterApplicationRule, SemanticErrorRule } from '../types/domain';",
+            "import type { Encounter, EncounterApplicationRule, SemanticErrorRule } from '../types/domain';\nimport { matchesUnorderedGroups, sameMembers } from './answerAcceptance';"
+          )
+          old = """function sameMembers(left: string[], right: string[]) {
+            return left.length === right.length && left.every((id) => right.includes(id));
+          }
+
+          """
+          if old not in text:
+              raise SystemExit('encounterEngine: old sameMembers helper not found')
+          text = text.replace(old, '', 1)
+          old = """  const rule = pendingRules.find((candidate) => candidate.skillId === selectedSkillId) ?? pendingRules[0];
+            if (!rule) {
+          """
+          new = """  const skillRules = pendingRules.filter((candidate) => candidate.skillId === selectedSkillId);
+            const matchesObjects = (candidate: EncounterApplicationRule) => candidate.objectGroups?.length
+              ? matchesUnorderedGroups(selectedObjectIds, candidate.objectGroups)
+              : candidate.orderMatters
+                ? candidate.objectIds.length === selectedObjectIds.length && candidate.objectIds.every((id, index) => selectedObjectIds[index] === id)
+                : sameMembers(candidate.objectIds, selectedObjectIds);
+            const rule = skillRules.find(matchesObjects) ?? skillRules[0] ?? pendingRules[0];
+            if (!rule) {
+          """
+          if old not in text:
+              raise SystemExit('encounterEngine: rule selection block not found')
+          text = text.replace(old, new, 1)
+          old = """  if (rule.orderMatters) {
+            const exactOrder = rule.objectIds.every((id, index) => selectedObjectIds[index] === id) && selectedObjectIds.length === rule.objectIds.length;
+            if (!exactOrder) {
+              const errorKind = sameMembers(rule.objectIds, selectedObjectIds) ? 'wrong-order' : 'wrong-objects';
+              return { correct: false, kind: errorKind, message: semanticMessage(rule, errorKind), ruleId: rule.id, producedRelationIds: [] };
+            }
+          } else if (!sameMembers(rule.objectIds, selectedObjectIds)) {
+            return { correct: false, kind: 'wrong-objects', message: semanticMessage(rule, 'wrong-objects'), ruleId: rule.id, producedRelationIds: [] };
+          }
+          """
+          new = """  if (rule.objectGroups?.length) {
+            if (!matchesUnorderedGroups(selectedObjectIds, rule.objectGroups)) {
+              const errorKind = sameMembers(rule.objectIds, selectedObjectIds) ? 'wrong-order' : 'wrong-objects';
+              return { correct: false, kind: errorKind, message: semanticMessage(rule, errorKind), ruleId: rule.id, producedRelationIds: [] };
+            }
+          } else if (rule.orderMatters) {
+            const exactOrder = rule.objectIds.every((id, index) => selectedObjectIds[index] === id) && selectedObjectIds.length === rule.objectIds.length;
+            if (!exactOrder) {
+              const errorKind = sameMembers(rule.objectIds, selectedObjectIds) ? 'wrong-order' : 'wrong-objects';
+              return { correct: false, kind: errorKind, message: semanticMessage(rule, errorKind), ruleId: rule.id, producedRelationIds: [] };
+            }
+          } else if (!sameMembers(rule.objectIds, selectedObjectIds)) {
+            return { correct: false, kind: 'wrong-objects', message: semanticMessage(rule, 'wrong-objects'), ruleId: rule.id, producedRelationIds: [] };
+          }
+          """
+          if old not in text:
+              raise SystemExit('encounterEngine: object validation block not found')
+          write(p, text)
+
+          # Ordered correspondence rules: preserve pair semantics without forcing presentation order.
+          p = 'src/data/bootstrap.ts'
+          text = read(p)
+          replacements = [
+            ("objectIds: ['vertex-a', 'vertex-d', 'vertex-b', 'vertex-e', 'vertex-c', 'vertex-f'],\n        orderMatters: true,",
+             "objectIds: ['vertex-a', 'vertex-d', 'vertex-b', 'vertex-e', 'vertex-c', 'vertex-f'],\n        objectGroups: [['vertex-a', 'vertex-d'], ['vertex-b', 'vertex-e'], ['vertex-c', 'vertex-f']],\n        orderMatters: false,"),
+            ("objectIds: ['side-ab', 'side-de', 'side-bc', 'side-ef', 'side-ac', 'side-df'],\n        orderMatters: true,",
+             "objectIds: ['side-ab', 'side-de', 'side-bc', 'side-ef', 'side-ac', 'side-df'],\n        objectGroups: [['side-ab', 'side-de'], ['side-bc', 'side-ef'], ['side-ac', 'side-df']],\n        orderMatters: false,"),
+            ("objectIds: ['angle-a', 'angle-d', 'angle-b', 'angle-e', 'angle-c', 'angle-f'],\n        orderMatters: true,",
+             "objectIds: ['angle-a', 'angle-d', 'angle-b', 'angle-e'], ['angle-c', 'angle-f']],\n        orderMatters: false,")
+          ]
+          # Fix the third replacement separately to avoid a malformed generated line.
+          for old, new in replacements[:2]:
+              if text.count(old) != 1: raise SystemExit(f'bootstrap pattern count {text.count(old)} for {old}')
+              text = text.replace(old, new, 1)
+          old = "objectIds: ['angle-a', 'angle-d', 'angle-b', 'angle-e', 'angle-c', 'angle-f'],\n        orderMatters: true,"
+          new = "objectIds: ['angle-a', 'angle-d', 'angle-b', 'angle-e', 'angle-c', 'angle-f'],\n        objectGroups: [['angle-a', 'angle-d'], ['angle-b', 'angle-e'], ['angle-c', 'angle-f']],\n        orderMatters: false,"
+          if text.count(old) != 1: raise SystemExit(f'bootstrap angle pattern count {text.count(old)}')
+          text = text.replace(old, new, 1)
+          write(p, text)
+
+          # Content validation understands grouped semantic answers.
+          p = 'src/data/contentValidation.ts'
+          text = read(p)
+          old = """      for (const id of rule.objectIds) if (!objectIds.has(id)) errors.push(`${encounter.id}/${rule.id}: objeto inexistente ${id}`);
+            for (const id of [...rule.requiresRelationIds, ...rule.producesRelationIds]) {
+          """
+          new = """      for (const id of rule.objectIds) if (!objectIds.has(id)) errors.push(`${encounter.id}/${rule.id}: objeto inexistente ${id}`);
+            if (rule.objectGroups?.length) {
+              const flattened = rule.objectGroups.flat();
+              if (flattened.length !== rule.objectIds.length || new Set(flattened).size !== flattened.length) {
+                errors.push(`${encounter.id}/${rule.id}: grupos semânticos devem particionar os objetos sem duplicação`);
+              }
+              for (const group of rule.objectGroups) {
+                if (!group.length) errors.push(`${encounter.id}/${rule.id}: grupo semântico vazio`);
+                for (const id of group) {
+                  if (!objectIds.has(id)) errors.push(`${encounter.id}/${rule.id}: objeto de grupo inexistente ${id}`);
+                  if (!rule.objectIds.includes(id)) errors.push(`${encounter.id}/${rule.id}: objeto ${id} do grupo não pertence à regra`);
+                }
+              }
+              for (const id of rule.objectIds) if (!flattened.includes(id)) errors.push(`${encounter.id}/${rule.id}: objeto ${id} ficou fora dos grupos semânticos`);
+            }
+            for (const id of [...rule.requiresRelationIds, ...rule.producesRelationIds]) {
+          """
+          if old not in text: raise SystemExit('contentValidation insertion point not found')
+          write(p, text.replace(old, new, 1))
+
+          # Journey stages can explicitly declare additional mathematically valid options.
+          p = 'src/data/interactiveJourneys.ts'
+          text = read(p)
+          text = text.replace("  correctOptionId: string;\n  successMessage: string;", "  correctOptionId: string;\n  acceptedAlternativeIds?: string[];\n  successMessage: string;", 1)
+
+          def stage_replace(old, new):
+              global text
+              if text.count(old) != 1:
+                  raise SystemExit(f'interactiveJourneys expected 1, got {text.count(old)}: {old[:90]}')
+              text = text.replace(old, new, 1)
+
+          stage_replace(
+            "option('line-correct', 'x+y+1=0', 'Correto: B, C e todo P da reta satisfazem essa equação.'),\n      option('line-wrong-c'",
+            "option('line-correct', 'x+y+1=0', 'Correto: B, C e todo P da reta satisfazem essa equação.'),\n      option('line-equivalent', '2x+2y+2=0', 'Também correto: é a mesma reta, apenas com todos os coeficientes multiplicados por 2.'),\n      option('line-wrong-c'")
+          stage_replace(
+            "correctOptionId: 'line-correct', successMessage: 'A equação geral foi derivada da colinearidade.'",
+            "correctOptionId: 'line-correct', acceptedAlternativeIds: ['line-equivalent'], successMessage: 'A equação geral foi derivada da colinearidade.'")
+
+          stage_replace(
+            "option('points-correct', '(−1,0) e (0,−1)', 'Correto: ambos zeram x+y+1 e são distintos.'),\n      option('points-same'",
+            "option('points-correct', '(−1,0) e (0,−1)', 'Correto: ambos zeram x+y+1 e são distintos.'),\n      option('points-equivalent', '(1,−2) e (2,−3)', 'Também correto: os dois pontos satisfazem x+y+1=0 e são distintos.'),\n      option('points-same'")
+          stage_replace(
+            "correctOptionId: 'points-correct', successMessage: 'Equação convertida em representação gráfica.'",
+            "correctOptionId: 'points-correct', acceptedAlternativeIds: ['points-equivalent'], successMessage: 'Equação convertida em representação gráfica.'")
+
+          stage_replace(
+            "option('support-correct', 'AB: 3x−y=0 · AC: y=0', 'Correto: cada equação contém as duas extremidades do respectivo segmento.'),\n      option('support-swapped'",
+            "option('support-correct', 'AB: 3x−y=0 · AC: y=0', 'Correto: cada equação contém as duas extremidades do respectivo segmento.'),\n      option('support-equivalent', 'AB: y=3x · AC: y=0', 'Também correto: y=3x é equivalente a 3x−y=0.'),\n      option('support-swapped'")
+          stage_replace(
+            "correctOptionId: 'support-correct', successMessage: 'Figura traduzida em duas retas suporte.'",
+            "correctOptionId: 'support-correct', acceptedAlternativeIds: ['support-equivalent'], successMessage: 'Figura traduzida em duas retas suporte.'")
+
+          stage_replace(
+            "option('set-correct', 'r={(x,y)∈ℝ² : 3x−y=0}', 'Correto: pertencimento à reta significa satisfazer a equação.'),\n      option('set-one'",
+            "option('set-correct', 'r={(x,y)∈ℝ² : 3x−y=0}', 'Correto: pertencimento à reta significa satisfazer a equação.'),\n      option('set-parametric', 'r={(t,3t): t∈ℝ}', 'Também correto: a parametrização descreve exatamente os mesmos pontos da reta.'),\n      option('set-one'")
+          stage_replace(
+            "correctOptionId: 'set-correct', successMessage: 'Reta interpretada como conjunto de pontos.'",
+            "correctOptionId: 'set-correct', acceptedAlternativeIds: ['set-parametric'], successMessage: 'Reta interpretada como conjunto de pontos.'")
+
+          stage_replace(
+            "option('median-correct', '3x+7y+1=0', 'Correto: A e M satisfazem a equação, que representa a mediana inteira.'),\n      option('median-midpoint'",
+            "option('median-correct', '3x+7y+1=0', 'Correto: A e M satisfazem a equação, que representa a mediana inteira.'),\n      option('median-equivalent', '−3x−7y−1=0', 'Também correto: multiplicar a equação inteira por −1 não altera a reta.'),\n      option('median-midpoint'")
+          stage_replace(
+            "correctOptionId: 'median-correct', successMessage: 'Mediana construída por modelagem, não por fórmula pronta.'",
+            "correctOptionId: 'median-correct', acceptedAlternativeIds: ['median-equivalent'], successMessage: 'Mediana construída por modelagem, não por fórmula pronta.'")
+
+          stage_replace(
+            "option('equations-correct', 'r: 2x+y−2=0 · s: x+2y−2=0', 'Correto: cada par de pontos satisfaz sua própria equação.'), option('equations-axes'",
+            "option('equations-correct', 'r: 2x+y−2=0 · s: x+2y−2=0', 'Correto: cada par de pontos satisfaz sua própria equação.'), option('equations-equivalent', 'r: 4x+2y−4=0 · s: 2x+4y−4=0', 'Também correto: cada equação foi apenas multiplicada por 2.'), option('equations-axes'")
+          stage_replace(
+            "correctOptionId: 'equations-correct', successMessage: 'Geometria traduzida em duas equações gerais.'",
+            "correctOptionId: 'equations-correct', acceptedAlternativeIds: ['equations-equivalent'], successMessage: 'Geometria traduzida em duas equações gerais.'")
+
+          stage_replace(
+            "options: [option('system-correct', '{ 2x+y−2=0 ; x+2y−2=0 }', 'Correto: o sistema reúne exatamente as duas condições de pertencimento.'), option('system-one'",
+            "options: [option('system-correct', '{ 2x+y−2=0 ; x+2y−2=0 }', 'Correto: o sistema reúne exatamente as duas condições de pertencimento.'), option('system-reversed', '{ x+2y−2=0 ; 2x+y−2=0 }', 'Também correto: trocar a ordem das equações não altera o sistema.'), option('system-one'")
+          stage_replace(
+            "correctOptionId: 'system-correct', successMessage: 'Sistema construído a partir da figura.'",
+            "correctOptionId: 'system-correct', acceptedAlternativeIds: ['system-reversed'], successMessage: 'Sistema construído a partir da figura.'")
+
+          stage_replace(
+            "correctOptionId: 'distance-pairs', successMessage: 'Cálculo focado no objetivo métrico.'",
+            "correctOptionId: 'distance-pairs', acceptedAlternativeIds: ['distance-all'], successMessage: 'Cálculo focado no objetivo métrico.'")
+
+          stage_replace(
+            "option('diagonal-proof', 'Comparar △AMB e △CMD, depois △AMD e △CMB por LAL', 'Correto: OPV fornece o ângulo compreendido e os meios fornecem os pares de lados.'), option('assume-parallel'",
+            "option('diagonal-proof', 'Comparar △AMB e △CMD, depois △AMD e △CMB por LAL', 'Correto: OPV fornece o ângulo compreendido e os meios fornecem os pares de lados.'), option('diagonal-proof-reversed', 'Comparar △AMD e △CMB, depois △AMB e △CMD por LAL', 'Também correto: as duas congruências são independentes e podem ser estabelecidas na ordem inversa.'), option('assume-parallel'")
+          stage_replace(
+            "correctOptionId: 'diagonal-proof', successMessage: 'A caracterização do paralelogramo nasceu das diagonais.'",
+            "correctOptionId: 'diagonal-proof', acceptedAlternativeIds: ['diagonal-proof-reversed'], successMessage: 'A caracterização do paralelogramo nasceu das diagonais.'")
+          write(p, text)
+
+          # Journey runner uses semantic acceptance rather than one exact id.
+          replace_once('src/components/learning/JourneyRunner.tsx',
+            "import { useProgress } from '../../state/progress';",
+            "import { useProgress } from '../../state/progress';\nimport { isAcceptedOption } from '../../engine/answerAcceptance';")
+          replace_once('src/components/learning/JourneyRunner.tsx',
+            "    const correct = selectedId === stage.correctOptionId;",
+            "    const correct = isAcceptedOption(selectedId, stage.correctOptionId, stage.acceptedAlternativeIds);")
+
+          # Official Q15 accepts any synchronized triangle notation preserving the correspondence.
+          p = 'src/data/officialQuest15.ts'
+          text = read(p)
+          text = text.replace("  correctId: string;\n  success: string;", "  correctId: string;\n  acceptedAlternativeIds?: string[];\n  success: string;", 1)
+          old = "{ id: 'q15-order', prompt: 'Qual escrita preserva a correspondência C↔C, B↔D, A↔E?', options: [{ id: 'order', label: '△CBA ≅ △CDE' }, { id: 'flip', label: '△ABC ≅ △CDE' }, { id: 'mix', label: '△BCA ≅ △CDE' }], correctId: 'order', success: 'Correspondência ordenada registrada.', error: 'Compare letra por letra: C com C, B com D e A com E.', relation: 'C↔C · B↔D · A↔E' },"
+          new = "{ id: 'q15-order', prompt: 'Qual escrita preserva a correspondência C↔C, B↔D, A↔E?', options: [{ id: 'order', label: '△CBA ≅ △CDE' }, { id: 'order-bac-dec', label: '△BAC ≅ △DEC' }, { id: 'order-acb-ecd', label: '△ACB ≅ △ECD' }, { id: 'flip', label: '△ABC ≅ △CDE' }, { id: 'mix', label: '△BCA ≅ △CDE' }], correctId: 'order', acceptedAlternativeIds: ['order-bac-dec', 'order-acb-ecd'], success: 'Correspondência preservada: permutações sincronizadas dos dois triângulos são equivalentes.', error: 'Compare letra por letra: cada posição deve manter C↔C, B↔D e A↔E.', relation: 'C↔C · B↔D · A↔E' },"
+          if text.count(old) != 1: raise SystemExit('official q15 order step not found')
+          write(p, text.replace(old, new, 1))
+
+          replace_once('src/pages/OfficialQuest15Page.tsx',
+            "import type { MasteryDimension } from '../types/domain';",
+            "import type { MasteryDimension } from '../types/domain';\nimport { isAcceptedOption } from '../engine/answerAcceptance';")
+          replace_once('src/pages/OfficialQuest15Page.tsx',
+            "    const correct = selectedId === step.correctId;",
+            "    const correct = isAcceptedOption(selectedId, step.correctId, step.acceptedAlternativeIds);")
+
+          # Microquest explicitly accepts DF and FD as the same segment.
+          p = 'src/data/microquests.ts'
+          text = read(p)
+          old = "options: [{ id: 'de', label: 'DE' }, { id: 'df', label: 'DF' }, { id: 'ef', label: 'EF' }],\n    correctOptionId: 'df',\n    successMessage: 'A ocupa a posição de D e C ocupa a posição de F; portanto AC ↔ DF.',"
+          new = "options: [{ id: 'de', label: 'DE' }, { id: 'df', label: 'DF' }, { id: 'fd', label: 'FD' }, { id: 'ef', label: 'EF' }],\n    correctOptionId: 'df',\n    acceptedAlternativeIds: ['fd'],\n    successMessage: 'A ocupa a posição de D e C ocupa a posição de F; portanto AC ↔ DF, que é o mesmo segmento que FD.',"
+          if text.count(old) != 1: raise SystemExit('microquest correspondence block not found')
+          write(p, text.replace(old, new, 1))
+
+          replace_once('src/pages/MicroquestPage.tsx',
+            "import { useProgress } from '../state/progress';",
+            "import { useProgress } from '../state/progress';\nimport { isAcceptedOption } from '../engine/answerAcceptance';")
+          replace_once('src/pages/MicroquestPage.tsx',
+            "    const correct = selectedId === microquest.correctOptionId;",
+            "    const correct = isAcceptedOption(selectedId, microquest.correctOptionId, microquest.acceptedAlternativeIds);")
+
+          # Guided lesson accepts DE and ED as the same segment.
+          p = 'src/pages/CorrespondenceLessonPage.tsx'
+          text = read(p)
+          text = text.replace("  correctId?: string;\n  success?: string;", "  correctId?: string;\n  acceptedAlternativeIds?: string[];\n  success?: string;", 1)
+          old = "options: [{ id: 'DF', label: 'DF' }, { id: 'EF', label: 'EF' }, { id: 'DE', label: 'DE' }], correctId: 'DE', success: 'Isso: AB ↔ DE. Os dois extremos foram preservados.',"
+          new = "options: [{ id: 'DF', label: 'DF' }, { id: 'EF', label: 'EF' }, { id: 'DE', label: 'DE' }, { id: 'ED', label: 'ED' }], correctId: 'DE', acceptedAlternativeIds: ['ED'], success: 'Isso: AB ↔ DE; escrever ED nomeia o mesmo segmento. Os dois extremos foram preservados.',"
+          if text.count(old) != 1: raise SystemExit('lesson side block not found')
+          text = text.replace(old, new, 1)
+          text = text.replace("import { useProgress } from '../state/progress';", "import { useProgress } from '../state/progress';\nimport { isAcceptedOption } from '../engine/answerAcceptance';", 1)
+          text = text.replace("    const correct = selectedId === stage.correctId;", "    const correct = isAcceptedOption(selectedId, stage.correctId, stage.acceptedAlternativeIds);", 1)
+          write(p, text)
+
+          # Proof engine already supports alternatives; make the valid generic-definition answer reachable.
+          p = 'src/data/proofs.ts'
+          text = read(p)
+          old = "prompt: 'Qual definição transforma BD ≅ DC em uma classificação para D?', hint: 'D já pertence a BC e divide o segmento em partes congruentes.', justificationOptions: ['midpoint', 'angleBisector', 'definition'],\n      }),"
+          new = "prompt: 'Qual definição transforma BD ≅ DC em uma classificação para D?', hint: 'D já pertence a BC e divide o segmento em partes congruentes.', justificationOptions: ['midpoint', 'angleBisector', 'definition'],\n        acceptedAlternatives: [{ justification: 'definition' }],\n      }),"
+          if text.count(old) != 1: raise SystemExit('proof midpoint alternative insertion point not found')
+          write(p, text.replace(old, new, 1))
+
+          # Validate that configured proof alternatives are actually selectable/reachable.
+          p = 'src/data/proofValidation.ts'
+          text = read(p)
+          old = """      for (const answerId of step.expectedAnswerIds) {
+                if (!answerIds.has(answerId)) errors.push(`${proof.id}/${step.id}: resposta inexistente ${answerId}`);
+              }
+              if (!step.prompt || !step.hint || !step.statement || !step.relation) errors.push(`${proof.id}/${step.id}: metadados incompletos`);
+          """
+          new = """      for (const answerId of step.expectedAnswerIds) {
+                if (!answerIds.has(answerId)) errors.push(`${proof.id}/${step.id}: resposta inexistente ${answerId}`);
+              }
+              for (const alternative of step.acceptedAlternatives) {
+                for (const objectId of alternative.involvedObjects ?? []) {
+                  if (!objectIds.has(objectId)) errors.push(`${proof.id}/${step.id}: alternativa usa objeto inexistente ${objectId}`);
+                }
+                for (const answerId of alternative.answerIds ?? []) {
+                  if (!answerIds.has(answerId)) errors.push(`${proof.id}/${step.id}: alternativa usa resposta inexistente ${answerId}`);
+                }
+                if (alternative.justification && !step.justificationOptions.includes(alternative.justification)) {
+                  errors.push(`${proof.id}/${step.id}: justificativa alternativa ${alternative.justification} não está disponível na interface`);
+                }
+                if (alternative.relation && step.relationOptions.length && !step.relationOptions.some((choice) => choice.id === alternative.relation)) {
+                  errors.push(`${proof.id}/${step.id}: relação alternativa ${alternative.relation} não está disponível na interface`);
+                }
+              }
+              if (!step.prompt || !step.hint || !step.statement || !step.relation) errors.push(`${proof.id}/${step.id}: metadados incompletos`);
+          """
+          if old not in text: raise SystemExit('proofValidation insertion point not found')
+          write(p, text.replace(old, new, 1))
+
+          # Encounter unit tests: valid pair order/orientation must pass; wrong pairings still fail.
+          p = 'src/engine/encounterEngine.test.ts'
+          text = read(p)
+          insertion = """
+
+            it('accepts equivalent ordered correspondence regardless of pair order or pair orientation', () => {
+              expect(correspondence).toBeDefined();
+              if (!correspondence) return;
+              expect(validateApplication(correspondence, [], 'triangle-congruence', ['vertex-d', 'vertex-a', 'vertex-f', 'vertex-c', 'vertex-e', 'vertex-b']))
+                .toMatchObject({ correct: true, producedRelationIds: ['relation-correspondence'] });
+            });
+
+            it('still rejects the same global objects when they are paired incorrectly', () => {
+              expect(correspondence).toBeDefined();
+              if (!correspondence) return;
+              expect(validateApplication(correspondence, [], 'triangle-congruence', ['vertex-a', 'vertex-b', 'vertex-d', 'vertex-e', 'vertex-c', 'vertex-f']))
+                .toMatchObject({ correct: false, kind: 'wrong-order' });
+            });
+          """
+          marker = "\n});\n"
+          if not text.endswith(marker): raise SystemExit('encounterEngine.test end marker missing')
+          write(p, text[:-len(marker)] + insertion + marker)
+
+          # E2E regression coverage for mathematically equivalent answers.
+          p = 'tests/e2e/app.spec.ts'
+          text = read(p)
+          extra = r'''
+
+          test('semantic alternatives are accepted instead of being graded by canonical presentation', async ({ page }) => {
+            await resetProgress(page);
+
+            await page.goto('/lab/line-forge?focus=generic-point-line');
+            await page.getByRole('button', { name: '2x+2y+2=0', exact: true }).click();
+            await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+            await expect(page.getByText(/Também correto: é a mesma reta/)).toBeVisible();
+
+            await page.goto('/lab/exercise-48?focus=choose-distances');
+            await page.getByRole('button', { name: 'Todas as dez distâncias entre os cinco pontos', exact: true }).click();
+            await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+            await expect(page.getByText(/Isso é válido, porém/)).toBeVisible();
+
+            await page.goto('/microquest/correspondence-pairs');
+            await page.getByRole('button', { name: 'FD', exact: true }).click();
+            await page.getByRole('button', { name: 'Verificar relação', exact: true }).click();
+            await expect(page.getByText(/mesmo segmento que FD/)).toBeVisible();
+          });
+
+          test('ordered correspondence accepts equivalent pair order but rejects wrong pairings', async ({ page }) => {
+            await resetProgress(page);
+            await page.goto('/encounter/ordered-correspondence');
+            await page.getByRole('button', { name: 'Congruência', exact: true }).click();
+            for (const name of ['D', 'A', 'F', 'C', 'E', 'B']) await page.getByRole('button', { name, exact: true }).click();
+            await page.getByRole('button', { name: 'Confirmar aplicação', exact: true }).click();
+            await expect(page.getByText(/Correspondência registrada/)).toBeVisible();
+          });
+
+          test('official Q15 accepts an equivalent synchronized triangle notation', async ({ page }) => {
+            await resetProgress(page);
+            await page.goto('/encounter/official-q15');
+            for (const name of ['∠BCA ≅ ∠DCE por OPV', 'ALA']) {
+              await page.getByRole('button', { name, exact: true }).click();
+              await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+              await page.getByRole('button', { name: 'Registrar e avançar', exact: true }).click();
+            }
+            await page.getByRole('button', { name: '△BAC ≅ △DEC', exact: true }).click();
+            await page.getByRole('button', { name: 'Sustentar resposta', exact: true }).click();
+            await expect(page.getByText(/permutações sincronizadas/)).toBeVisible();
+          });
+          '''
+          if 'semantic alternatives are accepted instead of being graded by canonical presentation' in text:
+              raise SystemExit('E2E semantic tests already present')
+          write(p, text + extra)
+
+          write('ANSWER_ACCEPTANCE_AUDIT.md', '''# Auditoria de aceitação de respostas matematicamente equivalentes
+
+          ## Problema encontrado
+
+          Parte do aplicativo já usava validação semântica (por exemplo, o laboratório cartesiano testa propriedades do ponto), mas outros fluxos comparavam apenas IDs canônicos ou uma sequência exata de cliques.
+
+          Isso criava falsos negativos pedagógicos: uma resposta matematicamente equivalente podia ser recusada por apresentação, ordem, orientação de segmento ou escolha de uma rota válida porém menos eficiente.
+
+          ## Correções
+
+          - camada compartilhada `answerAcceptance` para opções equivalentes, multisets e grupos semânticos;
+          - correspondências A↔D, B↔E, C↔F passam a aceitar os pares em qualquer ordem e cada par em qualquer orientação, sem aceitar pareamentos errados;
+          - equações escalares equivalentes de uma mesma reta são apresentadas e aceitas em pontos críticos da campanha analítica;
+          - pares alternativos de pontos na mesma reta e parametrização equivalente passam a ser aceitos;
+          - ordem das equações de um sistema pode variar;
+          - uma estratégia matematicamente válida porém ineficiente deixa de ser registrada como erro;
+          - DF e FD / DE e ED são tratados como o mesmo segmento nas atividades correspondentes;
+          - Q15 aceita notações de congruência obtidas por permutação sincronizada dos dois triângulos;
+          - prova guiada aceita `Definição` como justificativa válida quando ela é semanticamente a definição de ponto médio;
+          - validações estruturais impedem alternativas configuradas mas impossíveis de selecionar.
+
+          ## Regra pedagógica
+
+          O sistema deve rejeitar uma resposta por conteúdo matemático, não por preferência de notação. Uma forma canônica pode continuar sendo mostrada como recomendada, mas equivalentes comprováveis devem ser aceitas sem gerar erro diagnóstico.
+          ''')
+          PY
+
+      - name: Install and validate
+        shell: bash
+        run: |
+          set +e
+          LOG=.semantic-answer-validation.log
+          STATUS=.semantic-answer-status.txt
+          : > "$LOG"
+          npm ci >> "$LOG" 2>&1; CI=$?
+          LINT=125; UNIT=125; BUILD=125; PW=125; E2E=125
+          if [ "$CI" -eq 0 ]; then
+            npm run lint >> "$LOG" 2>&1; LINT=$?
+            npm run test >> "$LOG" 2>&1; UNIT=$?
+            npm run build >> "$LOG" 2>&1; BUILD=$?
+            npx playwright install --with-deps chromium >> "$LOG" 2>&1; PW=$?
+            if [ "$BUILD" -eq 0 ] && [ "$PW" -eq 0 ]; then npm run test:e2e >> "$LOG" 2>&1; E2E=$?; fi
+          fi
+          RESULT=success
+          for CODE in "$CI" "$LINT" "$UNIT" "$BUILD" "$PW" "$E2E"; do if [ "$CODE" -ne 0 ]; then RESULT=failed; fi; done
+          printf 'status=%s\nnpm_ci=%s\nlint=%s\nunit=%s\nbuild=%s\nplaywright_install=%s\ne2e=%s\n' "$RESULT" "$CI" "$LINT" "$UNIT" "$BUILD" "$PW" "$E2E" > "$STATUS"
+          cat "$STATUS"
+
+      - name: Commit result
+        shell: bash
+        run: |
+          git config user.name 'github-actions[bot]'
+          git config user.email '41898282+github-actions[bot]@users.noreply.github.com'
+          if grep -q '^status=success$' .semantic-answer-status.txt; then
+            rm -f .semantic-answer-trigger .semantic-answer-status.txt .semantic-answer-validation.log .github/workflows/semantic-answer-audit.yml
+            git add -A
+            git commit -m 'fix: accept mathematically equivalent answers'
+            git push
+          else
+            rm -f .semantic-answer-trigger
+            git add -A
+            git commit -m 'wip: semantic answer audit needs fixes'
+            git push
+            exit 1
+          fi
