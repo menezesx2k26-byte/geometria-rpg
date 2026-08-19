@@ -85,7 +85,7 @@ test('a due review is secondary and never replaces Continuar jornada', async ({ 
     localStorage.setItem(key, JSON.stringify(stored));
   });
   await page.goto('/map');
-  await expect(page.getByRole('link', { name: /Continuar jornada.*A Ordem dos Vértices/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Continuar jornada.*Antes da Congruência/ })).toBeVisible();
   await expect(page.getByRole('link', { name: /Revisão programada.*Espelho de Vértices/ })).toBeVisible();
 });
 
@@ -124,9 +124,24 @@ test('ordered correspondence encounter validates vertices, sides and angles', as
   await expect(page.getByText(/O argumento completo/)).toBeVisible();
 });
 
-test('single path teaches correspondence before the challenge and grants a visible reward', async ({ page }) => {
+test('single path teaches before assessing correspondence and keeps first-contact errors non-punitive', async ({ page }) => {
   await resetProgress(page);
   await page.goto('/map');
+  await expect(page.getByRole('link', { name: /Continuar jornada.*Antes da Congruência/ })).toBeVisible();
+  await page.getByRole('link', { name: /Continuar jornada.*Antes da Congruência/ }).click();
+
+  await expect(page.getByRole('heading', { name: 'Antes da Congruência' })).toBeVisible();
+  await page.getByRole('button', { name: 'Depende de como os triângulos estão desenhados', exact: true }).click();
+  await expect(page.getByText(/orientação visual não altera/i)).toBeVisible();
+
+  const beforeCorrection = await page.evaluate(() => JSON.parse(localStorage.getItem('geometria-rpg:progress:v4') ?? '{}'));
+  expect(beforeCorrection.attempts).toHaveLength(0);
+  expect(beforeCorrection.attemptsV4).toHaveLength(0);
+  expect(Object.values(beforeCorrection.competencyStates).every((state) => (state as { evidenceCount: number }).evidenceCount === 0)).toBe(true);
+
+  await page.getByRole('button', { name: 'A↔D, B↔E, C↔F', exact: true }).click();
+  await page.getByRole('button', { name: 'Concluir ponte didática', exact: true }).click();
+
   await expect(page.getByRole('link', { name: /Continuar jornada.*A Ordem dos Vértices/ })).toBeVisible();
   await page.getByRole('link', { name: /Continuar jornada.*A Ordem dos Vértices/ }).click();
   await page.getByRole('button', { name: /Continuar/ }).click();
@@ -142,12 +157,11 @@ test('single path teaches correspondence before the challenge and grants a visib
   await applyEncounterRule(page, 'Congruência', ['AB', 'DE', 'BC', 'EF', 'AC', 'DF']);
   await applyEncounterRule(page, 'Congruência', ['∠A', '∠D', '∠B', '∠E', '∠C', '∠F']);
   await expect(page.getByRole('heading', { name: 'Conhecimento conquistado' })).toBeVisible();
-  await expect(page.getByText('+40 XP')).toBeVisible();
   await page.getByRole('link', { name: /Continuar jornada/ }).click();
-  await expect(page.getByRole('link', { name: /Continuar jornada.*A Encruzilhada/ })).toBeVisible();
+  await expect(page.getByRole('link', { name: /Continuar jornada.*OPV, LAL e Consequência/ })).toBeVisible();
 });
 
-test('primary navigation exposes only path, profile and achievements', async ({ page }) => {
+test('primary navigation exposes only path, profile and achievements' , async ({ page }) => {
   await page.goto('/map');
   const navigation = page.getByRole('navigation', { name: 'Navegação principal' });
   await expect(navigation.getByRole('link')).toHaveCount(3);
