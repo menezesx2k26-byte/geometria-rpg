@@ -7,6 +7,7 @@ import { FeedbackPanel, QuestFrame, UnlockBanner } from '../components/rpg';
 import { officialQuest15 } from '../data/officialQuest15';
 import { useProgress } from '../state/progress';
 import type { MasteryDimension } from '../types/domain';
+import { isAcceptedOption } from '../engine/answerAcceptance';
 
 function legacyEvidenceFor(stepId: string): { skillIds: string[]; masteryDimensions: MasteryDimension[] } {
   switch (stepId) {
@@ -110,7 +111,7 @@ export function OfficialQuest15Page() {
 
   const verify = () => {
     if (!selectedId) return;
-    const correct = selectedId === step.correctId;
+    const correct = isAcceptedOption(selectedId, step.correctId, step.acceptedAlternativeIds);
     const evidence = legacyEvidenceFor(step.id);
 
     recordAttempt(

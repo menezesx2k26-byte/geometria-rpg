@@ -3,6 +3,7 @@ import { useMemo, useState, type ReactNode } from 'react';
 import { Link, useSearchParams } from 'react-router-dom';
 import type { JourneyStage } from '../../data/interactiveJourneys';
 import { useProgress } from '../../state/progress';
+import { acceptedJourneyOptionIds, isAcceptedOption } from '../../engine/answerAcceptance';
 import { FeedbackPanel, UnlockBanner } from '../rpg';
 import { MissionRewardCard } from '../campaign/MissionRewardCard';
 import { CompetencyDebrief } from './CompetencyDebrief';
@@ -56,7 +57,7 @@ export function JourneyRunner({
     if (!selectedId || feedback?.state === 'correct') return;
     const selected = stage.options.find((item) => item.id === selectedId);
     if (!selected) return;
-    const correct = selectedId === stage.correctOptionId;
+    const correct = isAcceptedOption(selectedId, stage.correctOptionId, acceptedJourneyOptionIds(stage.id));
     recordAttempt(
       effectiveJourneyId,
       stage.id,

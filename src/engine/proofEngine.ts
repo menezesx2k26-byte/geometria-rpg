@@ -48,14 +48,19 @@ function orderedEqual(left: string[], right: string[]) {
   return left.length === right.length && left.every((id, index) => right[index] === id);
 }
 
+function equivalentJustification(expected: ProofJustification | undefined, actual: ProofJustification | undefined) {
+  if (expected === actual) return true;
+  return actual === 'definition' && ['midpoint', 'angleBisector', 'perpendicular'].includes(expected ?? '');
+}
+
 function matchesAlternative(step: ProofStep, candidate: ProofCandidate, alternative: ProofStepAlternative) {
   if (step.interaction === 'build-step') {
     return sameMembers(alternative.involvedObjects ?? step.involvedObjects, candidate.involvedObjects) &&
       (alternative.relation ?? step.relation) === candidate.relation &&
-      (alternative.justification ?? step.justification) === candidate.justification;
+      equivalentJustification(alternative.justification ?? step.justification, candidate.justification);
   }
   if (step.interaction === 'complete-justification') {
-    return (alternative.justification ?? step.justification) === candidate.justification;
+    return equivalentJustification(alternative.justification ?? step.justification, candidate.justification);
   }
   const answers = alternative.answerIds ?? step.expectedAnswerIds;
   return step.interaction === 'order-cards'
@@ -92,11 +97,11 @@ export function validateProofStep(
     if (candidate.relation !== step.relation) {
       return { correct: false, kind: 'relation', message: 'A relação escolhida não corresponde às marcas ou hipóteses disponíveis.' };
     }
-    if (candidate.justification !== step.justification) {
+    if (!equivalentJustification(step.justification, candidate.justification)) {
       return { correct: false, kind: 'justification', message: 'A afirmação pode parecer correta, mas essa justificativa não a prova.' };
     }
   } else if (step.interaction === 'complete-justification') {
-    if (candidate.justification !== step.justification) {
+    if (!equivalentJustification(step.justification, candidate.justification)) {
       return { correct: false, kind: 'justification', message: 'A justificativa não conecta este passo às informações já estabelecidas.' };
     }
   } else {
