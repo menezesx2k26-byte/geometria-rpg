@@ -58,3 +58,5 @@ test('correspondence encounter reveals only the objects needed by the current st
   const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
   expect(overflow).toBeLessThanOrEqual(1);
 });
+
+// CI trigger for the V10 mobile correspondence audit.
