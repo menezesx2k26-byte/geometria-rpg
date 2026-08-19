@@ -106,6 +106,53 @@ const focusedProfiles: ChallengeProfile[] = [
 export const challengeProfiles = [...baseProfiles, ...focusedProfiles];
 
 const stepBindings: Record<string, readonly Binding[]> = {
+  // Encounters: evidence must follow the mathematical action actually performed,
+  // not every competency associated with the whole encounter.
+  'ordered-correspondence:rule-correspondence': [['H1'], ['H5'], ['H15', 'supporting', 0.8]],
+  'ordered-correspondence:rule-side-correspondence': [['H5'], ['H15', 'supporting', 0.8]],
+  'ordered-correspondence:rule-angle-correspondence': [['H3', 'supporting', 0.6], ['H5'], ['H15', 'supporting', 0.8]],
+  'crossroads-opv:rule-opv': [['H3'], ['H6', 'supporting', 0.7], ['H15', 'supporting', 0.6]],
+  'crossroads-opv:rule-sas': [['H5'], ['H6', 'supporting', 0.8], ['H15', 'supporting', 0.6]],
+  'crossroads-opv:rule-cpctc': [['H5'], ['H6', 'supporting', 0.7], ['H15', 'supporting', 0.8]],
+
+  // Official Q15: algebra, angular reasoning and congruence are assessed in distinct steps.
+  'official-euclid-q15:q15-opv': [['H3'], ['H6', 'supporting', 0.7], ['H15', 'supporting', 0.6]],
+  'official-euclid-q15:q15-asa': [['H5'], ['H6', 'supporting', 0.8], ['H15', 'supporting', 0.6]],
+  'official-euclid-q15:q15-order': [['H5'], ['H15', 'supporting', 0.9]],
+  'official-euclid-q15:q15-x': [['H2'], ['H5', 'supporting', 0.6]],
+  'official-euclid-q15:q15-y': [['H2'], ['H5', 'supporting', 0.6]],
+  'official-euclid-q15:q15-perimeter': [['H4'], ['H5', 'supporting', 0.8], ['H15', 'supporting', 0.6]],
+
+  // Guided proof: each accepted step updates only the competencies evidenced by that step.
+  'proof:isosceles-base-angles:iso-side-given': [['H1'], ['H4', 'supporting', 0.7]],
+  'proof:isosceles-base-angles:iso-angle-split': [['H3'], ['H8', 'supporting', 0.8]],
+  'proof:isosceles-base-angles:iso-shared': [['H6'], ['H15', 'supporting', 0.7]],
+  'proof:isosceles-base-angles:iso-sas': [['H5'], ['H6', 'supporting', 0.9]],
+  'proof:isosceles-base-angles:iso-base-result': [['H5'], ['H6', 'supporting', 0.8], ['H15', 'supporting', 0.8]],
+
+  'proof:isosceles-cevian:iso-given': [['H1'], ['H4', 'supporting', 0.7]],
+  'proof:isosceles-cevian:bisected-angle': [['H3'], ['H8', 'supporting', 0.8]],
+  'proof:isosceles-cevian:shared-side': [['H6'], ['H15', 'supporting', 0.7]],
+  'proof:isosceles-cevian:triangles-sas': [['H5'], ['H6', 'supporting', 0.9]],
+  'proof:isosceles-cevian:base-parts': [['H5'], ['H6', 'supporting', 0.8]],
+  'proof:isosceles-cevian:midpoint-d': [['H8'], ['H6', 'supporting', 0.6]],
+  'proof:isosceles-cevian:median-ad': [['H8'], ['H15', 'supporting', 0.6]],
+  'proof:isosceles-cevian:angles-at-d': [['H3', 'supporting', 0.7], ['H5']],
+  'proof:isosceles-cevian:collinear-bdc': [['H1'], ['H6', 'supporting', 0.6]],
+  'proof:isosceles-cevian:linear-pair': [['H3'], ['H6', 'supporting', 0.8]],
+  'proof:isosceles-cevian:right-angles': [['H2'], ['H3', 'supporting', 0.8]],
+  'proof:isosceles-cevian:perpendicular-ad': [['H10'], ['H6', 'supporting', 0.7]],
+  'proof:isosceles-cevian:altitude-ad': [['H8'], ['H10', 'supporting', 0.8]],
+
+  'proof:asa-contradiction:audit-leap': [['H6'], ['H15', 'supporting', 0.9]],
+  'proof:asa-contradiction:assume-less': [['H6'], ['H7', 'supporting', 0.7]],
+  'proof:asa-contradiction:construct-f-prime': [['H13'], ['H6', 'supporting', 0.8]],
+  'proof:asa-contradiction:aux-sas': [['H5'], ['H6', 'supporting', 0.9]],
+  'proof:asa-contradiction:angular-conflict': [['H6'], ['H5', 'supporting', 0.7]],
+  'proof:asa-contradiction:same-point': [['H6'], ['H15', 'supporting', 0.6]],
+  'proof:asa-contradiction:missing-side': [['H5'], ['H6', 'supporting', 0.8]],
+  'proof:asa-contradiction:final-sas': [['H5'], ['H6', 'supporting', 0.9]],
+
   'ordered-correspondence:lesson-guided-b-e': [['H1'], ['H5'], ['H15', 'supporting', 0.6]],
   'ordered-correspondence:lesson-guided-c-f': [['H1'], ['H5'], ['H15', 'supporting', 0.6]],
   'ordered-correspondence:lesson-guided-side': [['H1'], ['H5'], ['H15', 'supporting', 0.7]],

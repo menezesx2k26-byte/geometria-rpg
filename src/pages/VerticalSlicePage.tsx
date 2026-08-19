@@ -21,7 +21,7 @@ export function VerticalSlicePage() {
         <a className="journey-route-card is-current" href="#congruence-route"><Castle /><small>EUCLIDIANA · LISTA 1</small><strong>Fortaleza da Congruência</strong><span>Correspondência → OPV → LAL → prova</span></a>
         <Link className="journey-route-card" to="/lab/parallelism"><GitBranch /><small>EUCLIDIANA · LISTA 2</small><strong>Passagem das Paralelas</strong><span>Ângulos → conversa → paralelogramo</span></Link>
         <Link className="journey-route-card" to="/lab/line-forge"><Braces /><small>ANALÍTICA · RETAS</small><strong>Forja das Retas</strong><span>Pontos → equações → SPD/SI/SPI</span></Link>
-        <Link className="journey-route-card is-boss" to="/lab/exercise-48"><Ruler /><small>BOSS · EXERCÍCIO 48</small><strong>Modelagem Métrica</strong><span>Figura → sistema → distância exata</span></Link>
+        <Link className="journey-route-card is-boss" to="/lab/exercise-48"><Ruler /><small>CHEFE · EXERCÍCIO 48</small><strong>Modelagem Métrica</strong><span>Figura → sistema → distância exata</span></Link>
         <Link className="journey-route-card" to="/lab/crossover"><ArrowLeftRight /><small>TRANSFERÊNCIA</small><strong>Ponte das Linguagens</strong><span>Sintética ↔ analítica em 3 encontros</span></Link>
       </div>
       <div id="congruence-route" className="slice-section-heading"><span className="eyebrow">Rota 01 · 10–15 minutos</span><h2>Fortaleza da Congruência</h2><p>A teoria aparece no Codex depois da ação matemática.</p></div>
@@ -37,7 +37,7 @@ export function VerticalSlicePage() {
             : <article key={item.id} className="slice-skill is-locked" aria-label={`${title} bloqueada`}>{content}</article>;
         })}
       </div>
-      <BossFrame><div className="slice-missions"><article><span className="eyebrow">Quest principal</span><h2>OPV → LAL → consequência</h2><p>Prove △AFB≅△HFR e extraia AB≅HR.</p><Link className="primary-action" to="/encounter/crossroads-opv">Entrar <ArrowRight size={16}/></Link></article><article><span className="eyebrow">Quest oficial 15</span><h2>ALA → x → y → perímetros</h2><p>Resposta oficial: x=14, y=10 e razão=1.</p><Link className="primary-action" to="/encounter/official-q15">Resolver <ArrowRight size={16}/></Link></article><article><span className="eyebrow">Boss Proof</span><h2>Bissetriz ⇒ mediana e altura</h2><p>Construa as duas cadeias no Proof Engine.</p><Link className="primary-action" to="/proof/isosceles-cevian?mode=training">Provar <ArrowRight size={16}/></Link></article></div></BossFrame>
+      <BossFrame><div className="slice-missions"><article><span className="eyebrow">Quest principal</span><h2>OPV → LAL → consequência</h2><p>Prove △AFB≅△HFR e extraia AB≅HR.</p><Link className="primary-action" to="/encounter/crossroads-opv">Entrar <ArrowRight size={16}/></Link></article><article><span className="eyebrow">Quest oficial 15</span><h2>ALA → x → y → perímetros</h2><p>Resposta oficial: x=14, y=10 e razão=1.</p><Link className="primary-action" to="/encounter/official-q15">Resolver <ArrowRight size={16}/></Link></article><article><span className="eyebrow">Prova-chefe</span><h2>Bissetriz ⇒ mediana e altura</h2><p>Construa as duas cadeias no motor de provas.</p><Link className="primary-action" to="/proof/isosceles-cevian?mode=training">Provar <ArrowRight size={16}/></Link></article></div></BossFrame>
       <Link className="slice-codex-link" to="/codex"><BookOpen/><span><strong>Codex mínimo</strong><small>Entradas desbloqueadas por descoberta e prova.</small></span></Link>
     </section>
   );

@@ -87,17 +87,20 @@ export function createInitialProgress(): UserProgress {
 }
 
 function scoreTo100(value: unknown) {
-  if (typeof value !== 'number' || Number.isNaN(value)) return 0;
+  if (typeof value !== 'number' || !Number.isFinite(value)) return 0;
   return Math.max(0, Math.min(100, value <= 1 ? value * 100 : value));
 }
 
 function dateKey(date: Date) {
-  return date.toISOString().slice(0, 10);
+  const year = date.getFullYear();
+  const month = String(date.getMonth() + 1).padStart(2, '0');
+  const day = String(date.getDate()).padStart(2, '0');
+  return `${year}-${month}-${day}`;
 }
 
 function yesterdayKey(date: Date) {
   const previous = new Date(date);
-  previous.setUTCDate(previous.getUTCDate() - 1);
+  previous.setDate(previous.getDate() - 1);
   return dateKey(previous);
 }
 
@@ -157,10 +160,12 @@ function updateReviewSchedule(
 
 function starsForCompletion(progress: UserProgress, completionId: string, previous?: MissionProgress): 1 | 2 | 3 {
   const lastPlayedAt = previous?.lastPlayedAt ? new Date(previous.lastPlayedAt).getTime() : 0;
-  const attempts = progress.attempts.filter((attempt) =>
-    attempt.encounterId === completionId
-    && new Date(attempt.attemptedAt).getTime() >= lastPlayedAt,
-  );
+  const attempts = progress.attempts.filter((attempt) => {
+    if (attempt.encounterId !== completionId) return false;
+    const attemptedAt = new Date(attempt.attemptedAt).getTime();
+    return previous?.lastPlayedAt ? attemptedAt > lastPlayedAt : true;
+  });
+  if (!attempts.length) return 1;
   const errors = attempts.filter((attempt) => !attempt.correct).length;
   const hints = attempts.reduce((total, attempt) => total + attempt.hintsUsed, 0);
   if (errors === 0 && hints === 0) return 3;
@@ -185,6 +190,7 @@ export function applyMissionCompletion(
   skillIds: string[],
   codexEntryIds: string[],
   now = new Date(),
+  completionPosition?: string,
 ): UserProgress {
   const node = findCampaignNodeByCompletionId(completionId);
   const nextSkills = { ...progress.skills };
@@ -201,7 +207,8 @@ export function applyMissionCompletion(
       completedEncounterIds,
       discoveredSkillIds: [...new Set([...progress.discoveredSkillIds, ...skillIds])],
       discoveredCodexEntryIds: [...new Set([...progress.discoveredCodexEntryIds, ...codexEntryIds])],
-      lastPosition: completionId.startsWith('proof:') ? `/proof/${completionId.slice(6)}` : `/encounter/${completionId}`,
+      lastPosition: completionPosition
+        ?? (completionId.startsWith('proof:') ? `/proof/${completionId.slice(6)}` : progress.lastPosition),
     };
   }
 
@@ -253,11 +260,12 @@ export function applyMissionCompletion(
     firstCompletion && completedMissionCount >= 1 ? 'first-mission' : undefined,
     stars === 3 ? 'first-perfect' : undefined,
     node.type === 'boss' && firstCompletion ? 'first-boss' : undefined,
+    firstCompletion ? node.reward.achievementId : undefined,
     completedMissionCount >= 5 ? 'five-missions' : undefined,
   ].filter(Boolean) as string[];
   const streak = firstCompletion ? updateStreak(progress, now) : progress.streak;
   if (streak.current >= 7) achievementsToCheck.push('seven-day-streak');
-  for (const achievementId of achievementsToCheck) {
+  for (const achievementId of [...new Set(achievementsToCheck)]) {
     const result = unlockAchievement({ ...progress, achievements }, achievementId, now);
     achievements = result.achievements;
     achievementUnlocked ??= result.title;
@@ -322,14 +330,21 @@ export function migrateProgress(value: unknown): UserProgress {
       return [skill.id, { ...fallback, ...existing, mastery: scoreTo100(existing.mastery), dimensions }];
     }),
   );
-  const attempts = (stored.attempts ?? []).map((attempt) => ({
-    ...attempt,
-    skillIds: attempt.skillIds ?? [],
-    masteryDimensions: attempt.masteryDimensions ?? [],
-    hintsUsed: attempt.hintsUsed ?? 0,
-  }));
-  const completedEncounterIds = stored.completedEncounterIds ?? [];
-  const missionProgress = stored.missionProgress ?? Object.fromEntries(
+  const attempts = (Array.isArray(stored.attempts) ? stored.attempts : [])
+    .filter((attempt) => attempt && typeof attempt === 'object' && typeof attempt.encounterId === 'string' && typeof attempt.stepId === 'string')
+    .map((attempt) => ({
+      ...attempt,
+      selectedIds: Array.isArray(attempt.selectedIds) ? attempt.selectedIds.filter((id): id is string => typeof id === 'string') : [],
+      diagnosticTags: Array.isArray(attempt.diagnosticTags) ? attempt.diagnosticTags : [],
+      skillIds: Array.isArray(attempt.skillIds) ? attempt.skillIds.filter((id): id is string => typeof id === 'string') : [],
+      masteryDimensions: Array.isArray(attempt.masteryDimensions) ? attempt.masteryDimensions : [],
+      hintsUsed: typeof attempt.hintsUsed === 'number' && Number.isFinite(attempt.hintsUsed) ? Math.max(0, Math.floor(attempt.hintsUsed)) : 0,
+      attemptedAt: typeof attempt.attemptedAt === 'string' ? attempt.attemptedAt : new Date(0).toISOString(),
+    }));
+  const completedEncounterIds = Array.isArray(stored.completedEncounterIds)
+    ? [...new Set(stored.completedEncounterIds.filter((id): id is string => typeof id === 'string'))]
+    : [];
+  const inferredMissionProgress = Object.fromEntries(
     campaignNodes
       .filter((node) => completedEncounterIds.includes(node.completionId))
       .map((node) => {
@@ -342,10 +357,33 @@ export function migrateProgress(value: unknown): UserProgress {
         }];
       }),
   );
+  const rawMissionProgress = stored.missionProgress && typeof stored.missionProgress === 'object' && !Array.isArray(stored.missionProgress)
+    ? stored.missionProgress
+    : {};
+  const normalizedStoredMissionProgress = Object.fromEntries(campaignNodes.flatMap((node) => {
+    const raw = rawMissionProgress[node.id];
+    if (!raw || typeof raw !== 'object') return [];
+    const completions = typeof raw.completions === 'number' && Number.isFinite(raw.completions)
+      ? Math.max(0, Math.floor(raw.completions))
+      : 0;
+    const rawStars = typeof raw.bestStars === 'number' && Number.isFinite(raw.bestStars) ? Math.floor(raw.bestStars) : 0;
+    const bestStars = Math.max(0, Math.min(3, rawStars)) as 0 | 1 | 2 | 3;
+    if (completions === 0 && bestStars === 0) return [];
+    return [[node.id, {
+      missionId: node.id,
+      bestStars: bestStars || 1,
+      completions: Math.max(1, completions),
+      ...(typeof raw.completedAt === 'string' ? { completedAt: raw.completedAt } : {}),
+      ...(typeof raw.lastPlayedAt === 'string' ? { lastPlayedAt: raw.lastPlayedAt } : {}),
+    }]];
+  }));
+  const missionProgress = { ...inferredMissionProgress, ...normalizedStoredMissionProgress };
   const inferredXp = Object.keys(missionProgress).reduce((total, id) => {
     const node = campaignNodes.find((candidate) => candidate.id === id);
     return total + (node?.reward.xp ?? 0);
   }, 0);
+  const storedXp = typeof stored.xp === 'number' && Number.isFinite(stored.xp) ? stored.xp : inferredXp;
+  const normalizedXp = Math.max(0, Math.round(storedXp));
   const replayed = storedVersion === 4
     ? undefined
     : replayLegacyAttempts(attempts);
@@ -353,8 +391,52 @@ export function migrateProgress(value: unknown): UserProgress {
     ? normalizeCompetencyStates(stored.competencyStates)
     : replayed?.states ?? initial.competencyStates;
   const attemptsV4 = storedVersion === 4 && Array.isArray(stored.attemptsV4)
-    ? stored.attemptsV4
+    ? stored.attemptsV4.filter((attempt) => attempt && typeof attempt === 'object' && Array.isArray(attempt.evidence) && Array.isArray(attempt.behaviorObservations))
     : replayed?.attempts ?? [];
+  const discoveredSkillIds = Array.isArray(stored.discoveredSkillIds)
+    ? [...new Set(stored.discoveredSkillIds.filter((id): id is string => typeof id === 'string' && Boolean(nextSkills[id])))]
+    : initial.discoveredSkillIds;
+  const codexIds = new Set(skills.map((skill) => skill.codexEntryId));
+  const discoveredCodexEntryIds = Array.isArray(stored.discoveredCodexEntryIds)
+    ? [...new Set(stored.discoveredCodexEntryIds.filter((id): id is string => typeof id === 'string' && codexIds.has(id)))]
+    : initial.discoveredCodexEntryIds;
+  const rawStreak = stored.streak && typeof stored.streak === 'object' ? stored.streak : initial.streak;
+  const streak = {
+    current: typeof rawStreak.current === 'number' && Number.isFinite(rawStreak.current) ? Math.max(0, Math.floor(rawStreak.current)) : 0,
+    best: typeof rawStreak.best === 'number' && Number.isFinite(rawStreak.best) ? Math.max(0, Math.floor(rawStreak.best)) : 0,
+    ...(typeof rawStreak.lastActivityDate === 'string' ? { lastActivityDate: rawStreak.lastActivityDate } : {}),
+  };
+  streak.best = Math.max(streak.best, streak.current);
+  const quests = Object.fromEntries(gameQuests.map((definition) => {
+    const raw = stored.quests?.[definition.id];
+    const value = raw && typeof raw.value === 'number' && Number.isFinite(raw.value)
+      ? Math.max(0, Math.min(definition.target, Math.floor(raw.value)))
+      : 0;
+    const completed = Boolean(raw?.completed) || value >= definition.target;
+    return [definition.id, {
+      questId: definition.id,
+      value: completed ? definition.target : value,
+      target: definition.target,
+      completed,
+      ...(completed && typeof raw?.rewardedAt === 'string' ? { rewardedAt: raw.rewardedAt } : {}),
+    }];
+  }));
+  const reviewSchedule: Record<string, ReviewSchedule> = {};
+  if (stored.reviewSchedule && typeof stored.reviewSchedule === 'object' && !Array.isArray(stored.reviewSchedule)) {
+    for (const [conceptId, raw] of Object.entries(stored.reviewSchedule)) {
+      if (!nextSkills[conceptId] || !raw || typeof raw !== 'object') continue;
+      if (typeof raw.lastSeen !== 'string' || typeof raw.nextReview !== 'string') continue;
+      if (!Number.isFinite(Date.parse(raw.lastSeen)) || !Number.isFinite(Date.parse(raw.nextReview))) continue;
+      reviewSchedule[conceptId] = {
+        conceptId,
+        consecutiveCorrect: typeof raw.consecutiveCorrect === 'number' && Number.isFinite(raw.consecutiveCorrect) ? Math.max(0, Math.floor(raw.consecutiveCorrect)) : 0,
+        recentErrors: typeof raw.recentErrors === 'number' && Number.isFinite(raw.recentErrors) ? Math.max(0, Math.floor(raw.recentErrors)) : 0,
+        intervalDays: typeof raw.intervalDays === 'number' && Number.isFinite(raw.intervalDays) ? Math.max(1, Math.floor(raw.intervalDays)) : 1,
+        lastSeen: raw.lastSeen,
+        nextReview: raw.nextReview,
+      };
+    }
+  }
   return {
     ...initial,
     ...stored,
@@ -362,21 +444,23 @@ export function migrateProgress(value: unknown): UserProgress {
     skills: nextSkills,
     attempts,
     completedEncounterIds,
-    discoveredSkillIds: stored.discoveredSkillIds ?? initial.discoveredSkillIds,
-    discoveredCodexEntryIds: stored.discoveredCodexEntryIds ?? initial.discoveredCodexEntryIds,
+    discoveredSkillIds,
+    discoveredCodexEntryIds,
     errorTagCounts: stored.errorTagCounts ?? {},
-    hintsUsed: stored.hintsUsed ?? 0,
-    lastPosition: stored.lastPosition ?? '/map',
-    recommendedMicroquestIds: stored.recommendedMicroquestIds ?? [],
-    completedMicroquestIds: stored.completedMicroquestIds ?? [],
-    xp: stored.xp ?? inferredXp,
-    level: stored.level ?? Math.floor((stored.xp ?? inferredXp) / 100) + 1,
+    hintsUsed: typeof stored.hintsUsed === 'number' && Number.isFinite(stored.hintsUsed) ? Math.max(0, Math.floor(stored.hintsUsed)) : 0,
+    lastPosition: typeof stored.lastPosition === 'string' && stored.lastPosition.startsWith('/') ? stored.lastPosition : '/map',
+    recommendedMicroquestIds: Array.isArray(stored.recommendedMicroquestIds) ? [...new Set(stored.recommendedMicroquestIds.filter((id): id is string => typeof id === 'string'))] : [],
+    completedMicroquestIds: Array.isArray(stored.completedMicroquestIds) ? [...new Set(stored.completedMicroquestIds.filter((id): id is string => typeof id === 'string'))] : [],
+    xp: normalizedXp,
+    level: Math.floor(normalizedXp / 100) + 1,
     missionProgress,
-    streak: stored.streak ?? initial.streak,
-    quests: { ...initial.quests, ...(stored.quests ?? {}) },
-    achievements: stored.achievements ?? [],
-    reviewSchedule: stored.reviewSchedule ?? {},
-    analyticsEvents: stored.analyticsEvents ?? [],
+    streak,
+    quests,
+    achievements: Array.isArray(stored.achievements)
+      ? stored.achievements.filter((entry) => entry && typeof entry.achievementId === 'string' && typeof entry.unlockedAt === 'string')
+      : [],
+    reviewSchedule,
+    analyticsEvents: Array.isArray(stored.analyticsEvents) ? stored.analyticsEvents.slice(-MAX_ANALYTICS_EVENTS) : [],
     competencyStates,
     attemptsV4,
     recentBehaviorObservations: storedVersion === 4 && Array.isArray(stored.recentBehaviorObservations)
@@ -389,9 +473,17 @@ export function migrateProgress(value: unknown): UserProgress {
   };
 }
 
+function readStorage(key: string) {
+  try {
+    return window.localStorage.getItem(key);
+  } catch {
+    return null;
+  }
+}
+
 function loadProgress(): UserProgress {
   if (typeof window === 'undefined') return createInitialProgress();
-  const current = window.localStorage.getItem(STORAGE_KEY);
+  const current = readStorage(STORAGE_KEY);
   if (current) {
     try {
       return migrateProgress(JSON.parse(current));
@@ -400,11 +492,15 @@ function loadProgress(): UserProgress {
     }
   }
   for (const key of LEGACY_STORAGE_KEYS) {
-    const legacy = window.localStorage.getItem(key);
+    const legacy = readStorage(key);
     if (!legacy) continue;
     try {
       const migrated = migrateProgress(JSON.parse(legacy));
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(migrated));
+      } catch {
+        // A migração continua válida em memória quando o storage não aceita escrita.
+      }
       return migrated;
     } catch {
       // Tenta a próxima versão legada sem remover nenhuma chave.
@@ -423,7 +519,7 @@ interface ProgressContextValue {
     diagnosticTags?: DiagnosticTag[],
     metadata?: AttemptMetadata,
   ) => void;
-  completeEncounter: (encounterId: string, skillIds: string[], codexEntryIds: string[]) => void;
+  completeEncounter: (encounterId: string, skillIds: string[], codexEntryIds: string[], position?: string) => void;
   completeMicroquest: (microquestId: string) => void;
   resetProgress: () => void;
 }
@@ -436,7 +532,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
   const commit = (update: UserProgress | ((current: UserProgress) => UserProgress)) => {
     setProgress((current) => {
       const next = typeof update === 'function' ? update(current) : update;
-      window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      try {
+        window.localStorage.setItem(STORAGE_KEY, JSON.stringify(next));
+      } catch {
+        // O estado em memória continua funcional mesmo se o navegador bloquear ou lotar o storage.
+      }
       return next;
     });
   };
@@ -495,9 +595,11 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
             const autonomyMultiplier = ['reproduction', 'transfer'].includes(dimension.dimension)
               ? Math.max(.45, 1 - hintsUsed * .2)
               : 1;
+            const target = correct ? 100 * autonomyMultiplier : 0;
+            const score = Math.max(0, Math.min(100, dimension.score + .25 * (target - dimension.score)));
             return {
               ...dimension,
-              score: correct ? Math.min(100, dimension.score + 16 * autonomyMultiplier) : dimension.score,
+              score,
               attempts: dimension.attempts + 1,
             };
           });
@@ -548,8 +650,8 @@ export function ProgressProvider({ children }: { children: ReactNode }) {
         };
       });
     },
-    completeEncounter(encounterId, skillIds, codexEntryIds) {
-      commit((current) => applyMissionCompletion(current, encounterId, skillIds, codexEntryIds));
+    completeEncounter(encounterId, skillIds, codexEntryIds, position) {
+      commit((current) => applyMissionCompletion(current, encounterId, skillIds, codexEntryIds, new Date(), position));
     },
     completeMicroquest(microquestId) {
       commit((current) => {

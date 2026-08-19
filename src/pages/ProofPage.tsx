@@ -17,7 +17,7 @@ import type { DiagnosticTag, MasteryDimension, Proof, ProofChoice, ProofJustific
 
 function ChoiceButton({ choice, selected, order, onClick }: { choice: ProofChoice; selected: boolean; order?: number | undefined; onClick: () => void }) {
   return (
-    <button type="button" className={selected ? 'proof-choice is-selected' : 'proof-choice'} onClick={onClick}>
+    <button type="button" className={selected ? 'proof-choice is-selected' : 'proof-choice'} aria-pressed={selected} onClick={onClick}>
       {order ? <span>{order}</span> : null}{choice.label}
     </button>
   );
@@ -158,7 +158,7 @@ function ProofSession({ proof, mode }: { proof: Proof; mode: 'training' | 'exam'
   if (solved) {
     return (
       <>
-        <UnlockBanner title={proof.title}>Boss Proof concluída. {proof.unlockSkillIds.length ? 'Uma nova habilidade foi registrada.' : 'A cadeia lógica foi validada.'}</UnlockBanner>
+        <UnlockBanner title={proof.title}>Prova-chefe concluída. {proof.unlockSkillIds.length ? 'Uma nova habilidade foi registrada.' : 'A cadeia lógica foi validada.'}</UnlockBanner>
         <MissionRewardCard completionId={`proof:${proof.id}`} />
         <CompetencyDebrief encounterId={`proof:${proof.id}`} />
         <article className="debrief-card"><span className="eyebrow">Debrief</span><h2>Estrutura da prova</h2><p>{proof.debrief}</p></article>
@@ -179,6 +179,8 @@ function ProofSession({ proof, mode }: { proof: Proof; mode: 'training' | 'exam'
               type="button"
               key={step.id}
               className={`${activeStep.id === step.id ? 'is-active ' : ''}${completedStepIds.includes(step.id) ? 'is-complete' : ''}`}
+              aria-current={activeStep.id === step.id ? 'step' : undefined}
+              disabled={completedStepIds.includes(step.id)}
               onClick={() => selectStep(step.id)}
             >
               <span>{completedStepIds.includes(step.id) ? <Check size={14} /> : index + 1}</span>

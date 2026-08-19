@@ -63,8 +63,28 @@ export function validateContent(bundle: ContentBundle) {
   skills.forEach((skill) => visit(skill.id, []));
 
   for (const region of regions) {
-    for (const id of region.skillIds) if (!skillIds.has(id)) errors.push(`${region.id}: skill inexistente ${id}`);
-    for (const id of region.encounterIds) if (!encounterIds.has(id)) errors.push(`${region.id}: encounter inexistente ${id}`);
+    if (findDuplicates(region.skillIds).length) errors.push(`${region.id}: skills duplicadas`);
+    if (findDuplicates(region.encounterIds).length) errors.push(`${region.id}: encounters duplicados`);
+    for (const id of region.skillIds) {
+      if (!skillIds.has(id)) errors.push(`${region.id}: skill inexistente ${id}`);
+      const skill = skills.find((candidate) => candidate.id === id);
+      if (skill && skill.regionId !== region.id) errors.push(`${region.id}: skill ${id} pertence a ${skill.regionId}`);
+    }
+    for (const id of region.encounterIds) {
+      if (!encounterIds.has(id)) errors.push(`${region.id}: encounter inexistente ${id}`);
+      const encounter = encounters.find((candidate) => candidate.id === id);
+      if (encounter && encounter.regionId !== region.id) errors.push(`${region.id}: encounter ${id} pertence a ${encounter.regionId}`);
+    }
+  }
+
+  for (const skill of skills) {
+    const region = regions.find((candidate) => candidate.id === skill.regionId);
+    if (region && !region.skillIds.includes(skill.id)) errors.push(`${skill.id}: ausente da lista de skills da região ${skill.regionId}`);
+  }
+
+  for (const encounter of encounters) {
+    const region = regions.find((candidate) => candidate.id === encounter.regionId);
+    if (region && !region.encounterIds.includes(encounter.id)) errors.push(`${encounter.id}: ausente da lista de encounters da região ${encounter.regionId}`);
   }
 
   for (const encounter of encounters) {
@@ -81,6 +101,17 @@ export function validateContent(bundle: ContentBundle) {
     }
     const relationIds = new Set(encounter.relations.map((relation) => relation.id));
     const objectIds = new Set(encounter.objects.map((object) => object.id));
+    const justificationIds = new Set(encounter.justifications.map((item) => item.id));
+    if (objectIds.size !== encounter.objects.length) errors.push(`${encounter.id}: objetos com IDs duplicados`);
+    if (relationIds.size !== encounter.relations.length) errors.push(`${encounter.id}: relações com IDs duplicados`);
+    if (justificationIds.size !== encounter.justifications.length) errors.push(`${encounter.id}: justificativas com IDs duplicados`);
+    for (const relation of encounter.relations) {
+      if (!relation.objectIds.length) errors.push(`${encounter.id}/${relation.id}: relação sem objetos`);
+      for (const id of relation.objectIds) if (!objectIds.has(id)) errors.push(`${encounter.id}/${relation.id}: objeto inexistente ${id}`);
+    }
+    for (const justification of encounter.justifications) {
+      if (justification.skillId && !skillIds.has(justification.skillId)) errors.push(`${encounter.id}/${justification.id}: skill inexistente ${justification.skillId}`);
+    }
     for (const id of [...encounter.initialRelationIds, ...encounter.completionRelationIds]) {
       if (!relationIds.has(id)) errors.push(`${encounter.id}: relação de gameplay inexistente ${id}`);
     }
@@ -108,7 +139,32 @@ export function validateContent(bundle: ContentBundle) {
       ...encounter.justifications.map((item) => item.id),
     ]);
     for (const step of encounter.steps) {
+      for (const id of step.objectIds ?? []) if (!objectIds.has(id)) errors.push(`${encounter.id}/${step.id}: objeto de step inexistente ${id}`);
+      for (const id of step.relationIds ?? []) if (!relationIds.has(id)) errors.push(`${encounter.id}/${step.id}: relação de step inexistente ${id}`);
+      for (const id of step.justificationIds ?? []) if (!justificationIds.has(id)) errors.push(`${encounter.id}/${step.id}: justificativa de step inexistente ${id}`);
       for (const id of step.expectedIds) if (!optionIds.has(id)) errors.push(`${encounter.id}/${step.id}: resposta inexistente ${id}`);
+    }
+
+    if (encounter.completionRules.minimumCorrectSteps < 1) errors.push(`${encounter.id}: minimumCorrectSteps deve ser positivo`);
+    if (encounter.completionRules.requiredStepIds.length < encounter.completionRules.minimumCorrectSteps) {
+      errors.push(`${encounter.id}: minimumCorrectSteps excede os steps obrigatórios`);
+    }
+
+    const reachableRelations = new Set(encounter.initialRelationIds);
+    let changed = true;
+    while (changed) {
+      changed = false;
+      for (const rule of encounter.applicationRules) {
+        if (!rule.requiresRelationIds.every((id) => reachableRelations.has(id))) continue;
+        for (const produced of rule.producesRelationIds) {
+          if (reachableRelations.has(produced)) continue;
+          reachableRelations.add(produced);
+          changed = true;
+        }
+      }
+    }
+    for (const id of encounter.completionRelationIds) {
+      if (!reachableRelations.has(id)) errors.push(`${encounter.id}: relação de conclusão inalcançável ${id}`);
     }
   }
 

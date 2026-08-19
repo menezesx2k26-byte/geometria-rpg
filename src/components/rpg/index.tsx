@@ -12,6 +12,13 @@ import { Link, NavLink } from 'react-router-dom';
 import { assetMap } from '../../data/assetMap';
 import type { CodexEntry, MasteryProfile, Region, Skill, SkillState } from '../../types/domain';
 
+const skillStateLabels: Record<SkillState, string> = {
+  locked: 'Bloqueada',
+  available: 'Disponível',
+  practicing: 'Em prática',
+  mastered: 'Dominada',
+};
+
 export function RPGHeader({ children }: { children?: ReactNode }) {
   return (
     <header className="rpg-header">
@@ -81,7 +88,7 @@ export function SkillNode({ skill, profile }: { skill: Skill; profile: MasteryPr
         <MasteryBar profile={profile} compact />
       </div>
       <span className="state-label">
-        {locked && <LockKeyhole size={13} />} {profile.state}
+        {locked && <LockKeyhole size={13} />} {skillStateLabels[profile.state]}
       </span>
     </article>
   );
@@ -109,7 +116,7 @@ export function QuestFrame({ children, label = 'Quest' }: { children: ReactNode;
 export function BossFrame({ children }: { children: ReactNode }) {
   return (
     <section className="boss-frame">
-      <img src={assetMap['encounter-boss']} alt="Boss Proof" />
+      <img src={assetMap['encounter-boss']} alt="Prova-chefe" />
       <div>{children}</div>
     </section>
   );

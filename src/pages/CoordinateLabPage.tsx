@@ -57,7 +57,7 @@ export function CoordinateLabPage() {
             {gridValues.slice().reverse().map((y) => (
               <div className="cartesian-row" role="row" key={y}>
                 {gridValues.map((x) => (
-                  <button type="button" role="gridcell" aria-label={`Ponto (${x}, ${y})`} key={`${x},${y}`} className={`${x === 0 ? 'on-y-axis ' : ''}${y === 0 ? 'on-x-axis ' : ''}${selected?.[0] === x && selected[1] === y ? 'is-selected' : ''}`} onClick={() => { setSelected([x,y]); setFeedback(undefined); }}><span /></button>
+                  <button type="button" role="gridcell" aria-label={`Ponto (${x}, ${y})`} aria-selected={selected?.[0] === x && selected[1] === y} key={`${x},${y}`} className={`${x === 0 ? 'on-y-axis ' : ''}${y === 0 ? 'on-x-axis ' : ''}${selected?.[0] === x && selected[1] === y ? 'is-selected' : ''}`} onClick={() => { setSelected([x,y]); setFeedback(undefined); }}><span /></button>
                 ))}
               </div>
             ))}

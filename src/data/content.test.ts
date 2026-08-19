@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest';
 import { analyticalCampaignQuests, validateAnalyticalCampaign } from './campaignAnalytical';
 import { euclideanCampaignQuests, validateEuclideanCampaign } from './campaignEuclidean';
+import { validateGameCampaign } from './gameCampaign';
 import { assetMap } from './assetMap';
 import { codexEntries, encounters, regions, skills } from './bootstrap';
 import { validateContent } from './contentValidation';
@@ -12,6 +13,7 @@ describe('data validation', () => {
     expect(validateContent({ skills, regions, encounters, codexEntries, assetManifest: assetMap })).toEqual([]);
   });
   it('keeps proof dependencies acyclic and complete', () => expect(validateProofs(proofs)).toEqual([]));
+  it('keeps the linear game campaign structurally valid', () => expect(validateGameCampaign()).toEqual([]));
   it('covers the official campaigns exactly', () => {
     expect(validateEuclideanCampaign()).toEqual([]);
     expect(euclideanCampaignQuests).toHaveLength(43);

@@ -55,7 +55,7 @@ export function CodexPage() {
             {(relatedEncounters.length > 0 || relatedPractice.length > 0) && <section className="codex-practice"><BookMarked /><div><small>PRATICAR / PROVAR</small>{relatedEncounters.map((item) => <Link key={item.id} to={`/encounter/${item.id}`}>{item.title} <ArrowRight size={14} /></Link>)}{relatedPractice.map((item) => <Link key={item.route} to={item.route}>{item.label} <ArrowRight size={14} /></Link>)}</div></section>}
           </article>
         ) : (
-          <div className="locked-panel"><LockKeyhole /><h1>Entrada ainda selada</h1><p>Resolva o encounter relacionado para revelar este teorema.</p></div>
+          <div className="locked-panel"><LockKeyhole /><h1>Entrada ainda selada</h1><p>Resolva o encontro relacionado para revelar este teorema.</p></div>
         )}
       </section>
     );

@@ -49,7 +49,7 @@ export const proofs: Proof[] = [
   {
     id: 'isosceles-cevian',
     title: 'A Ceviana de Três Faces',
-    subtitle: 'Boss Proof · isósceles, mediana e altura',
+    subtitle: 'Prova-chefe · isósceles, mediana e altura',
     source: { origin: 'Lista Euclidiana', reference: 'Bissetriz do vértice no triângulo isósceles' },
     hypothesis: ['AB ≅ AC', 'AD é bissetriz de ∠BAC', 'B, D e C são colineares'],
     thesis: 'AD é mediana e altura de △ABC.',

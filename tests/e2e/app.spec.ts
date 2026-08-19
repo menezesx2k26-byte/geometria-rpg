@@ -4,6 +4,17 @@ import { expect, test, type Page } from '@playwright/test';
 async function resetProgress(page: Page) {
   await page.goto('/review');
   await page.getByRole('button', { name: /Reiniciar progresso/ }).click();
+  await page.getByRole('button', { name: 'Sim, reiniciar', exact: true }).click();
+  await page.waitForFunction(() => {
+    const raw = localStorage.getItem('geometria-rpg:progress:v4');
+    if (!raw) return false;
+    try {
+      const stored = JSON.parse(raw);
+      return Array.isArray(stored.attempts) && stored.attempts.length === 0;
+    } catch {
+      return false;
+    }
+  });
 }
 
 async function applyEncounterRule(page: Page, skill: string, objects: string[]) {
@@ -66,6 +77,7 @@ test('a due review is secondary and never replaces Continuar jornada', async ({ 
   await page.evaluate(() => {
     const key = 'geometria-rpg:progress:v4';
     const stored = JSON.parse(localStorage.getItem(key) ?? '{}');
+    stored.reviewSchedule ??= {};
     stored.reviewSchedule['triangle-congruence'] = {
       conceptId: 'triangle-congruence', consecutiveCorrect: 2, recentErrors: 1, intervalDays: 1,
       lastSeen: '2026-08-10T12:00:00.000Z', nextReview: '2026-08-11T12:00:00.000Z',
@@ -151,7 +163,7 @@ test('guided proof requires five justified mathematical steps', async ({ page })
     await page.getByRole('button', { name: choice, exact: true }).click();
     await page.getByRole('button', { name: 'Validar passo', exact: true }).click();
   }
-  await expect(page.getByText(/Boss Proof concluída/)).toBeVisible();
+  await expect(page.getByText(/Prova-chefe concluída/)).toBeVisible();
 });
 
 test('coordinate lab requires three geometric point selections', async ({ page }) => {
@@ -219,7 +231,7 @@ test('parallelism and crossover routes demand justification and transfer', async
 for (const width of [360, 390, 412]) {
   test(`mobile ${width}px has no horizontal overflow and touch targets are usable`, async ({ page }) => {
     await page.setViewportSize({ width, height: 844 });
-    for (const route of ['/map', '/mission/ordered-correspondence', '/profile', '/achievements', '/lab/line-forge']) {
+    for (const route of ['/map', '/mission/ordered-correspondence', '/encounter/ordered-correspondence', '/encounter/crossroads-opv', '/encounter/official-q15', '/profile', '/achievements', '/lab/line-forge', '/lab/parallelism', '/lab/exercise-48']) {
       await page.goto(route);
       const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
       expect(overflow, route).toBeLessThanOrEqual(1);
@@ -232,6 +244,31 @@ for (const width of [360, 390, 412]) {
     }
   });
 }
+
+
+test('ordered correspondence labels remain separated on narrow mobile screens', async ({ page }) => {
+  await page.setViewportSize({ width: 360, height: 844 });
+  await page.goto('/mission/ordered-correspondence');
+  await expect(page.locator('.interactive-figure svg')).toBeVisible();
+  await expect(page.locator('.interactive-figure svg text').filter({ hasText: /^C$/ })).toBeVisible();
+  await expect(page.locator('.interactive-figure svg text').filter({ hasText: /^E$/ })).toBeVisible();
+  const labels = page.locator('.interactive-figure svg text');
+  const positions = await labels.evaluateAll((elements) => Object.fromEntries(elements.map((element) => {
+    const rect = element.getBoundingClientRect();
+    return [element.textContent ?? '', { left: rect.left, right: rect.right, top: rect.top, bottom: rect.bottom }];
+  })));
+  const c = positions.C;
+  const e = positions.E;
+  expect(c).toBeTruthy();
+  expect(e).toBeTruthy();
+  expect(e.left - c.right).toBeGreaterThanOrEqual(8);
+});
+
+test('unknown routes show a recoverable not-found screen', async ({ page }) => {
+  await page.goto('/territorio-que-nao-existe');
+  await expect(page.getByRole('heading', { name: /território não existe/i })).toBeVisible();
+  await expect(page.getByRole('link', { name: 'Voltar ao caminho' })).toBeVisible();
+});
 
 test('direct route refresh works and RPG assets load', async ({ page, request }) => {
   await page.goto('/proof/isosceles-base-angles?mode=training');

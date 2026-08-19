@@ -26,6 +26,7 @@ function practiceRoute(skillId: string) {
 export function ReviewPage() {
   const { progress, resetProgress } = useProgress();
   const [reviewedAt] = useState(Date.now);
+  const [confirmReset, setConfirmReset] = useState(false);
   const incorrect = progress.attempts.filter((attempt) => !attempt.correct);
   const practicedProfiles = Object.values(progress.skills).filter((profile) => profile.totalAttempts > 0);
   const dimensionScores = Object.keys(dimensionLabels).map((dimension) => {
@@ -61,7 +62,7 @@ export function ReviewPage() {
       <div className="diagnostic-summary">
         <div><BrainCircuit size={28} /><strong>{progress.attempts.length}</strong><span>tentativas</span></div>
         <div><Target size={28} /><strong>{incorrect.length}</strong><span>erros diagnosticados</span></div>
-        <div><Play size={28} /><strong>{progress.completedEncounterIds.length}</strong><span>encounters concluídos</span></div>
+        <div><Play size={28} /><strong>{progress.completedEncounterIds.length}</strong><span>encontros concluídos</span></div>
       </div>
 
       <section className="geometer-sheet">
@@ -122,7 +123,21 @@ export function ReviewPage() {
         <div>{skills.filter((skill) => progress.skills[skill.id]?.totalAttempts).map((skill) => { const profile = progress.skills[skill.id]; return profile ? <article key={skill.id}><strong>{skill.shortTitle}</strong><span>{Math.round(profile.mastery)}/100</span><small>{profile.correctAttempts}/{profile.totalAttempts} aplicações corretas</small></article> : null; })}</div>
       </section>
 
-      <div className="review-actions"><Link className="primary-action" to={progress.lastPosition}><Play size={16} /> Continuar de onde parei</Link><button type="button" className="text-action" onClick={resetProgress}><RotateCcw size={16} /> Reiniciar progresso</button></div>
+      <div className="review-actions">
+        <Link className="primary-action" to={progress.lastPosition}><Play size={16} /> Continuar de onde parei</Link>
+        {!confirmReset ? (
+          <button type="button" className="text-action" onClick={() => setConfirmReset(true)}><RotateCcw size={16} /> Reiniciar progresso</button>
+        ) : (
+          <div className="reset-confirmation" role="alert">
+            <strong>Apagar todo o progresso local?</strong>
+            <span>Essa ação zera missões, diagnóstico, XP e conquistas neste navegador.</span>
+            <div>
+              <button type="button" className="secondary-action" onClick={() => setConfirmReset(false)}>Cancelar</button>
+              <button type="button" className="danger-action" onClick={() => { resetProgress(); setConfirmReset(false); }}>Sim, reiniciar</button>
+            </div>
+          </div>
+        )}
+      </div>
     </section>
   );
 }

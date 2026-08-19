@@ -145,7 +145,7 @@ export const lineForgeStages: JourneyStage[] = [
     hint: 'Multiplique a primeira equação por 2.', diagnosticTag: 'same-line-different-equation', skillIds: ['linear-system-classification'], masteryDimensions: ['justification', 'transfer'],
   },
   {
-    id: 'median-boss', phase: 'BOSS · MEDIANA ANALÍTICA',
+    id: 'median-boss', phase: 'CHEFE · MEDIANA ANALÍTICA',
     prompt: 'A=(2,−1) e M_BC=(−3/2,1/2). Qual é a equação da mediana por A?',
     context: 'A construção euclidiana “vértice → ponto médio” agora precisa virar uma reta.',
     options: [
@@ -223,7 +223,7 @@ export const parallelismStages: JourneyStage[] = [
     correctOptionId: 'converse-correct', successMessage: 'Conversa aplicada sem circularidade.', workspaceEntry: 'alternos internos congruentes ⇒ r∥s', hint: 'Troque hipótese e conclusão do teorema direto.', diagnosticTag: 'parallel-converse', skillIds: ['parallel-converse-skill'], masteryDimensions: ['justification', 'reproduction'],
   },
   {
-    id: 'parallelogram-boss', phase: 'BOSS · DIAGONAIS', prompt: 'Em ABCD, as diagonais AC e BD se cruzam em M com AM=MC e BM=MD. Qual construção inicia a prova de que ABCD é paralelogramo?', context: 'Os pontos médios já produzem pares de lados em triângulos opostos; é preciso conectá-los.',
+    id: 'parallelogram-boss', phase: 'CHEFE · DIAGONAIS', prompt: 'Em ABCD, as diagonais AC e BD se cruzam em M com AM=MC e BM=MD. Qual construção inicia a prova de que ABCD é paralelogramo?', context: 'Os pontos médios já produzem pares de lados em triângulos opostos; é preciso conectá-los.',
     options: [option('diagonal-proof', 'Comparar △AMB e △CMD, depois △AMD e △CMB por LAL', 'Correto: OPV fornece o ângulo compreendido e os meios fornecem os pares de lados.'), option('assume-parallel', 'Declarar AB∥CD e AD∥BC', 'Essas são as conclusões; assumi-las tornaria a prova circular.'), option('measure-drawing', 'Medir os lados no desenho', 'A aparência não substitui as hipóteses de ponto médio e OPV.')],
     correctOptionId: 'diagonal-proof', successMessage: 'A caracterização do paralelogramo nasceu das diagonais.', workspaceEntry: 'diagonais se bissetam ⇒ pares LAL ⇒ lados opostos paralelos', hint: 'Em M há ângulos opostos pelo vértice.', diagnosticTag: 'parallelogram-characterization', skillIds: ['parallelogram-characterization'], masteryDimensions: ['application', 'justification', 'transfer'],
   },
