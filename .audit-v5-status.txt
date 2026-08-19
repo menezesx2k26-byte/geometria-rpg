@@ -1,0 +1,8 @@
+status=failed
+npm_ci=0
+lint=0
+unit=0
+build=0
+playwright_install=0
+e2e=1
+source_commit=b946b9514b49f2ee4244bca5df6df798c823f808
