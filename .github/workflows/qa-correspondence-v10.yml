@@ -4,6 +4,10 @@ on:
   push:
     branches:
       - agent/encounter-correspondence-ux-v10
+  pull_request:
+    branches:
+      - codex/v2-gamified-path
+    types: [opened, synchronize, reopened, ready_for_review]
 
 permissions:
   contents: read
