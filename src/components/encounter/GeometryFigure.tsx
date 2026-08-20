@@ -1,4 +1,5 @@
-import { useId, type KeyboardEvent } from 'react';
+import { useId, useState, type KeyboardEvent } from 'react';
+import { arrangePairingOptions } from '../../engine/pairingLayout';
 import type { Encounter, GeometryObject } from '../../types/domain';
 
 interface GeometryFigureProps {
@@ -57,11 +58,37 @@ export function GeometryFigure({
   const figureId = useId();
   const titleId = `${figureId}-title`;
   const descId = `${figureId}-desc`;
+  const [sessionSeed] = useState(() => Math.floor(Math.random() * 0x7fffffff));
   const selectableIds = new Set(encounter.applicationRules.flatMap((rule) => rule.objectIds));
   const visibleIds = visibleObjectIds ? new Set(visibleObjectIds) : undefined;
   const selectableObjects = encounter.objects.filter(
     (object) => selectableIds.has(object.id) && (!visibleIds || visibleIds.has(object.id)),
   );
+  const scopedRule = visibleObjectIds
+    ? encounter.applicationRules.find(
+        (rule) => rule.objectIds.length === visibleObjectIds.length
+          && rule.objectIds.every((id) => visibleObjectIds.includes(id)),
+      )
+    : undefined;
+  const paletteIds = selectionPresentation === 'pairs' && scopedRule
+    ? arrangePairingOptions(scopedRule.objectIds, `${encounter.id}:${scopedRule.id}:${sessionSeed}`)
+    : selectableObjects.map((object) => object.id);
+  const selectableObjectMap = new Map(selectableObjects.map((object) => [object.id, object]));
+  const paletteObjects = paletteIds
+    .map((id) => selectableObjectMap.get(id))
+    .filter((object): object is GeometryObject => object !== undefined);
+
+  const orderedTriangleLabels: Array<[string, number, number]> = showCorrespondenceMarks
+    ? [
+        ['A', 170, 52], ['B', 45, 382], ['C', 295, 382],
+        ['D', 470, 52], ['E', 345, 382], ['F', 595, 382],
+      ]
+    : [
+        ['A', 170, 52], ['B', 45, 382], ['C', 295, 382],
+        // DEF is deliberately inverted: correspondence must come from △ABC ≅ △DEF,
+        // not from matching vertices that occupy the same visual position.
+        ['D', 470, 382], ['E', 595, 52], ['F', 345, 52],
+      ];
 
   const toggleTriangle = (id: string) => {
     if (!readOnly && selectableIds.has(id) && (!visibleIds || visibleIds.has(id))) onToggle(id);
@@ -116,10 +143,14 @@ export function GeometryFigure({
       ) : (
         <svg viewBox="0 0 640 430" preserveAspectRatio="xMidYMid meet" aria-labelledby={`${titleId} ${descId}`} role="img">
           <title id={titleId}>Triângulos ABC e DEF</title>
-          <desc id={descId}>Dois triângulos usados para interpretar a correspondência declarada pela notação de congruência.</desc>
+          <desc id={descId}>
+            {showCorrespondenceMarks
+              ? 'Dois triângulos usados para interpretar correspondências geométricas.'
+              : 'Os triângulos ABC e DEF estão em orientações diferentes; a correspondência deve ser lida da notação de congruência, não da posição visual.'}
+          </desc>
 
           <polygon points="60,340 170,70 280,340" />
-          <polygon points="360,340 470,70 580,340" />
+          <polygon points={showCorrespondenceMarks ? '360,340 470,70 580,340' : '470,340 580,70 360,70'} />
 
           {showCorrespondenceMarks ? (
             <>
@@ -132,15 +163,13 @@ export function GeometryFigure({
             </>
           ) : null}
 
-          {[
-            ['A', 170, 52], ['B', 45, 382], ['C', 295, 382], ['D', 470, 52], ['E', 345, 382], ['F', 595, 382],
-          ].map(([label, x, y]) => (
+          {orderedTriangleLabels.map(([label, x, y]) => (
             <text
-              key={String(label)}
-              x={Number(x)}
-              y={Number(y)}
+              key={label}
+              x={x}
+              y={y}
               textAnchor="middle"
-              className={selectedObjectIds.includes(`vertex-${String(label).toLowerCase()}`) ? 'is-highlighted' : ''}
+              className={selectedObjectIds.includes(`vertex-${label.toLowerCase()}`) ? 'is-highlighted' : ''}
             >
               {label}
             </text>
@@ -150,7 +179,7 @@ export function GeometryFigure({
 
       {showPalette && (
         <div className="figure-object-palette" aria-label="Objetos selecionáveis">
-          {selectableObjects.map((object) => {
+          {paletteObjects.map((object) => {
             const selectedIndex = selectedObjectIds.indexOf(object.id);
             const badge = selectedIndex >= 0
               ? selectionPresentation === 'pairs'
