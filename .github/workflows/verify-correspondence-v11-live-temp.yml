@@ -1,0 +1,68 @@
+name: Verify Correspondence V11 Live
+
+on:
+  pull_request:
+    branches:
+      - codex/v2-gamified-path
+    types: [opened, synchronize, reopened]
+
+permissions:
+  contents: read
+
+env:
+  CLOUDFLARE_ACCOUNT_ID: 257bca437616da74ece1ce4bbaf0bd89
+  CLOUDFLARE_API_TOKEN: ${{ secrets.CLOUDFLARE_API_TOKEN }}
+
+jobs:
+  verify-live:
+    runs-on: ubuntu-latest
+    timeout-minutes: 25
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: codex/v2-gamified-path
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+      - run: npm ci
+      - run: npm run lint
+      - run: npm test
+      - run: npm run build
+      - name: Deploy current V11 build
+        run: npx wrangler@4 deploy
+      - name: Install Chromium
+        run: npx playwright install chromium
+      - name: Verify anti-shortcut correspondence UX on live Worker
+        shell: bash
+        run: |
+          node --input-type=module <<'NODE'
+          import { chromium } from '@playwright/test';
+          const base = 'https://geometria-rpg.menezesx2k26.workers.dev';
+          const browser = await chromium.launch({ headless: true });
+          const context = await browser.newContext({ viewport: { width: 390, height: 844 } });
+          const page = await context.newPage();
+          const response = await page.goto(base + '/encounter/ordered-correspondence', { waitUntil: 'networkidle' });
+          if (!response?.ok()) throw new Error(`HTTP ${response?.status()}`);
+
+          const polygons = page.locator('.interactive-figure svg polygon');
+          if ((await polygons.count()) !== 2) throw new Error('Expected two triangles');
+          const secondPoints = await polygons.nth(1).getAttribute('points');
+          if (secondPoints !== '470,340 580,70 360,70') throw new Error(`Second triangle is not inverted: ${secondPoints}`);
+
+          const palette = page.getByLabel('Objetos selecionáveis');
+          const labels = await palette.getByRole('button').allTextContents();
+          if (labels.length !== 6) throw new Error(`Expected 6 vertex targets, got ${labels.length}`);
+          const pairs = [['A','D'],['B','E'],['C','F']];
+          for (let i = 0; i < labels.length; i += 2) {
+            const left = labels[i]?.trim();
+            const right = labels[i + 1]?.trim();
+            const leak = pairs.some(([a,b]) => (left === a && right === b) || (left === b && right === a));
+            if (leak) throw new Error(`Visual answer leak in row ${i/2 + 1}: ${left}↔${right}`);
+          }
+
+          const overflow = await page.evaluate(() => document.documentElement.scrollWidth - document.documentElement.clientWidth);
+          if (overflow > 1) throw new Error(`Horizontal overflow ${overflow}px`);
+          await browser.close();
+          console.log('LIVE_CORRESPONDENCE_V11_OK');
+          NODE
