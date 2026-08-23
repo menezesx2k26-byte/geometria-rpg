@@ -1,5 +1,4 @@
 import { useId, useState, type KeyboardEvent } from 'react';
-import { arrangePairingOptions } from '../../engine/pairingLayout';
 import type { Encounter, GeometryObject } from '../../types/domain';
 
 interface GeometryFigureProps {
@@ -17,11 +16,13 @@ function ObjectButton({
   object,
   badge,
   selected,
+  disabled = false,
   onToggle,
 }: {
   object: GeometryObject;
   badge?: number | undefined;
   selected: boolean;
+  disabled?: boolean;
   onToggle: () => void;
 }) {
   return (
@@ -29,6 +30,7 @@ function ObjectButton({
       type="button"
       className="figure-object-button"
       aria-pressed={selected}
+      disabled={disabled}
       onClick={onToggle}
     >
       {badge ? <span aria-hidden="true">{badge}</span> : null}
@@ -45,6 +47,12 @@ function activationHandler(onActivate: () => void) {
   };
 }
 
+function rotateTargets<T>(values: readonly T[], sessionSeed: number) {
+  if (values.length < 2) return [...values];
+  const shift = (sessionSeed % (values.length - 1)) + 1;
+  return values.map((_, index) => values[(index + shift) % values.length] as T);
+}
+
 export function GeometryFigure({
   encounter,
   selectedObjectIds,
@@ -58,40 +66,54 @@ export function GeometryFigure({
   const figureId = useId();
   const titleId = `${figureId}-title`;
   const descId = `${figureId}-desc`;
-  const [sessionSeed] = useState(() => Math.floor(Math.random() * 0x7fffffff));
+  const [sessionSeed] = useState(() => Math.floor(Math.random() * 100000));
   const selectableIds = new Set(encounter.applicationRules.flatMap((rule) => rule.objectIds));
   const visibleIds = visibleObjectIds ? new Set(visibleObjectIds) : undefined;
   const selectableObjects = encounter.objects.filter(
     (object) => selectableIds.has(object.id) && (!visibleIds || visibleIds.has(object.id)),
   );
+
   const scopedRule = visibleObjectIds
     ? encounter.applicationRules.find(
         (rule) => rule.objectIds.length === visibleObjectIds.length
           && rule.objectIds.every((id) => visibleObjectIds.includes(id)),
       )
     : undefined;
-  const paletteIds = selectionPresentation === 'pairs' && scopedRule
-    ? arrangePairingOptions(scopedRule.objectIds, `${encounter.id}:${scopedRule.id}:${sessionSeed}`)
-    : selectableObjects.map((object) => object.id);
-  const selectableObjectMap = new Map(selectableObjects.map((object) => [object.id, object]));
-  const paletteObjects = paletteIds
-    .map((id) => selectableObjectMap.get(id))
-    .filter((object): object is GeometryObject => object !== undefined);
-
-  const orderedTriangleLabels: Array<[string, number, number]> = showCorrespondenceMarks
-    ? [
-        ['A', 170, 52], ['B', 45, 382], ['C', 295, 382],
-        ['D', 470, 52], ['E', 345, 382], ['F', 595, 382],
-      ]
-    : [
-        ['A', 170, 52], ['B', 45, 382], ['C', 295, 382],
-        // DEF is deliberately inverted: correspondence must come from △ABC ≅ △DEF,
-        // not from matching vertices that occupy the same visual position.
-        ['D', 470, 382], ['E', 595, 52], ['F', 345, 52],
-      ];
+  const objectMap = new Map(selectableObjects.map((object) => [object.id, object]));
+  const useTwoSetMatcher = selectionPresentation === 'pairs' && scopedRule && scopedRule.objectIds.length === 6;
+  const leftIds = useTwoSetMatcher ? scopedRule.objectIds.filter((_, index) => index % 2 === 0) : [];
+  const canonicalRightIds = useTwoSetMatcher ? scopedRule.objectIds.filter((_, index) => index % 2 === 1) : [];
+  const rightIds = useTwoSetMatcher ? rotateTargets(canonicalRightIds, sessionSeed) : [];
+  const pendingId = selectedObjectIds.length % 2 === 1 ? selectedObjectIds[selectedObjectIds.length - 1] : undefined;
+  const pendingIsLeft = pendingId ? leftIds.includes(pendingId) : false;
+  const pendingIsRight = pendingId ? canonicalRightIds.includes(pendingId) : false;
 
   const toggleTriangle = (id: string) => {
     if (!readOnly && selectableIds.has(id) && (!visibleIds || visibleIds.has(id))) onToggle(id);
+  };
+
+  const renderObjectButton = (objectId: string, side: 'left' | 'right') => {
+    const object = objectMap.get(objectId);
+    if (!object) return null;
+    const selectedIndex = selectedObjectIds.indexOf(object.id);
+    const selected = selectedIndex >= 0;
+    const badge = selected ? Math.floor(selectedIndex / 2) + 1 : undefined;
+    const wrongSideWhilePairOpen = Boolean(
+      pendingId
+      && !selected
+      && ((side === 'left' && pendingIsLeft) || (side === 'right' && pendingIsRight)),
+    );
+
+    return (
+      <ObjectButton
+        key={object.id}
+        object={object}
+        selected={selected}
+        badge={badge}
+        disabled={readOnly || wrongSideWhilePairOpen}
+        onToggle={() => { if (!readOnly) onToggle(object.id); }}
+      />
+    );
   };
 
   return (
@@ -130,7 +152,6 @@ export function GeometryFigure({
           <path d="M278 193 A47 47 0 0 0 278 239" className="angle-mark" />
           <path d="M358 193 A47 47 0 0 1 358 239" className="angle-mark" />
 
-          {/* Hipóteses corretas: AF ≅ FH (uma marca) e BF ≅ FR (duas marcas). */}
           <path d="M208 143 l-8 14 M429 142 l8 14" className="tick-mark" />
           <path d="M194 279 l8 14 M208 270 l8 14 M431 272 l-8 14 M445 280 l-8 14" className="tick-mark" />
 
@@ -143,33 +164,28 @@ export function GeometryFigure({
       ) : (
         <svg viewBox="0 0 640 430" preserveAspectRatio="xMidYMid meet" aria-labelledby={`${titleId} ${descId}`} role="img">
           <title id={titleId}>Triângulos ABC e DEF</title>
-          <desc id={descId}>
-            {showCorrespondenceMarks
-              ? 'Dois triângulos usados para interpretar correspondências geométricas.'
-              : 'Os triângulos ABC e DEF estão em orientações diferentes; a correspondência deve ser lida da notação de congruência, não da posição visual.'}
-          </desc>
+          <desc id={descId}>Dois triângulos congruentes. A correspondência deve ser interpretada pela notação △ABC ≅ △DEF.</desc>
 
           <polygon points="60,340 170,70 280,340" />
-          <polygon points={showCorrespondenceMarks ? '360,340 470,70 580,340' : '470,340 580,70 360,70'} />
+          <polygon points="360,340 470,70 580,340" />
 
           {showCorrespondenceMarks ? (
             <>
-              {/* AB ↔ DE: uma marca. */}
               <path d="M109 221 l12 5 M409 221 l12 5" className="tick-mark" />
-              {/* AC ↔ DF: duas marcas. */}
               <path d="M219 216 l12 -5 M226 230 l12 -5 M519 216 l12 -5 M526 230 l12 -5" className="tick-mark" />
-              {/* BC ↔ EF: três marcas. */}
               <path d="M151 331 v18 M170 331 v18 M189 331 v18 M451 331 v18 M470 331 v18 M489 331 v18" className="tick-mark" />
             </>
           ) : null}
 
-          {orderedTriangleLabels.map(([label, x, y]) => (
+          {[
+            ['A', 170, 52], ['B', 45, 382], ['C', 295, 382], ['D', 470, 52], ['E', 345, 382], ['F', 595, 382],
+          ].map(([label, x, y]) => (
             <text
-              key={label}
-              x={x}
-              y={y}
+              key={String(label)}
+              x={Number(x)}
+              y={Number(y)}
               textAnchor="middle"
-              className={selectedObjectIds.includes(`vertex-${label.toLowerCase()}`) ? 'is-highlighted' : ''}
+              className={selectedObjectIds.includes(`vertex-${String(label).toLowerCase()}`) ? 'is-highlighted' : ''}
             >
               {label}
             </text>
@@ -177,9 +193,30 @@ export function GeometryFigure({
         </svg>
       )}
 
-      {showPalette && (
+      {showPalette && useTwoSetMatcher ? (
+        <div
+          aria-label="Objetos selecionáveis"
+          style={{
+            display: 'grid',
+            gridTemplateColumns: 'minmax(0, 1fr) minmax(0, 1fr)',
+            gap: 12,
+            borderTop: '1px solid rgba(91, 58, 23, .25)',
+            padding: 12,
+            background: 'rgba(255, 255, 255, .3)',
+          }}
+        >
+          <div style={{ display: 'grid', gap: 8 }}>
+            <strong style={{ textAlign: 'center', color: '#245d72', fontSize: '.72rem', letterSpacing: '.08em' }}>△ABC</strong>
+            {leftIds.map((id) => renderObjectButton(id, 'left'))}
+          </div>
+          <div style={{ display: 'grid', gap: 8 }}>
+            <strong style={{ textAlign: 'center', color: '#245d72', fontSize: '.72rem', letterSpacing: '.08em' }}>△DEF</strong>
+            {rightIds.map((id) => renderObjectButton(id, 'right'))}
+          </div>
+        </div>
+      ) : showPalette ? (
         <div className="figure-object-palette" aria-label="Objetos selecionáveis">
-          {paletteObjects.map((object) => {
+          {selectableObjects.map((object) => {
             const selectedIndex = selectedObjectIds.indexOf(object.id);
             const badge = selectedIndex >= 0
               ? selectionPresentation === 'pairs'
@@ -197,7 +234,7 @@ export function GeometryFigure({
             );
           })}
         </div>
-      )}
+      ) : null}
     </div>
   );
 }
